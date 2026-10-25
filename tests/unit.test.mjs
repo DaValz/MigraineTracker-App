@@ -1,5 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { spawnSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
 
 const mem = new Map();
 globalThis.localStorage = new Proxy({
@@ -686,4 +688,249 @@ test('correzioni dalla revisione: dose prevista oggi, backup solo dati, mese in 
   assert.equal(Math.round(oct.value * 10) / 10, 2.5, '1 giorno su 12 registrati = 2,5 ogni 30 giorni');
   const early = C.therapyOutcome(idx, db, ther, '2026-10-05');
   assert.equal(early.monthly[early.monthly.length - 1].value, null, 'con meno di 10 giorni registrati il mese non viene disegnato');
+});
+
+/* ---------- i18n ---------- */
+
+const I18N = await import('../js/i18n.js');
+
+test('i18n: segnaposto e plurali nelle lingue supportate', () => {
+  const f = I18N.formatMessage;
+  assert.equal(f('Ciao {nome}', { nome: 'Anna' }, 'it'), 'Ciao Anna');
+  assert.equal(f('Ciao {nome}', {}, 'it'), 'Ciao {nome}', 'un parametro mancante resta visibile');
+  const days = '{n, plural, one {# giorno} other {# giorni}}';
+  assert.deepEqual([0, 1, 2, 5].map((n) => f(days, { n }, 'it')), ['0 giorni', '1 giorno', '2 giorni', '5 giorni']);
+  assert.equal(f('{n, plural, =0 {nessun attacco} one {# attacco} other {# attacchi}}', { n: 0 }, 'it'), 'nessun attacco');
+  assert.equal(f('{n, plural, one {{nome} ha # attacco} other {{nome} ha # attacchi}}', { n: 3, nome: 'Anna' }, 'it'), 'Anna ha 3 attacchi');
+  assert.equal(f('Voto #1', {}, 'it'), 'Voto #1', '# fuori dai plurali non cambia');
+  const ro = '{n, plural, one {# zi} few {# zile} other {# de zile}}';
+  assert.deepEqual([1, 2, 5, 19, 20, 21, 101].map((n) => f(ro, { n }, 'ro')), ['1 zi', '2 zile', '5 zile', '19 zile', '20 de zile', '21 de zile', '101 zile']);
+  assert.equal(f('{n, plural, one {# jour} other {# jours}}', { n: 0 }, 'fr'), '0 jour', 'in francese 0 e 1 sono singolari');
+  assert.equal(f('{n, plural, one {# Tag} other {# Tage}}', { n: 1.5 }, 'de'), '1,5 Tage');
+});
+
+test('i18n: scelta della lingua dal telefono', () => {
+  assert.equal(I18N.detectLang(['pt-BR', 'en']), 'pt');
+  assert.equal(I18N.detectLang(['ja-JP', 'de-AT']), 'de');
+  assert.equal(I18N.detectLang(['it-IT']), 'it');
+  assert.equal(I18N.detectLang(['ja']), 'en');
+  assert.equal(I18N.detectLang([]), 'en');
+  assert.deepEqual(I18N.LANGS.map((l) => l.code), ['it', 'en', 'es', 'fr', 'de', 'pt', 'ro', 'nl']);
+});
+
+test('i18n: in italiano t(), tv(), tx() e le liste restituiscono il testo originale', () => {
+  assert.equal(I18N.lang, 'it');
+  assert.equal(I18N.t('Salva'), 'Salva');
+  assert.equal(I18N.t('{n, plural, one {# attacco} other {# attacchi}}', { n: 2 }), '2 attacchi');
+  assert.equal(I18N.tv('Stress'), 'Stress');
+  assert.equal(I18N.tv(null), '');
+  const node = { nodeType: 1 };
+  assert.deepEqual(I18N.tx('Leggi {guida} ora', { guida: node }), ['Leggi ', node, ' ora']);
+  assert.equal(I18N.listAnd(['a', 'b', 'c']), 'a, b e c');
+  assert.equal(I18N.listOr(['a', 'b']), 'a o b');
+  assert.equal(I18N.setLang('xx-non-esiste'), false);
+  assert.equal(dates.relativeDay('2026-10-25', '2026-10-25'), 'Oggi');
+  assert.deepEqual(dates.WEEKDAYS_SHORT, ['Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab', 'Dom']);
+  assert.deepEqual(dates.WEEKDAYS_LETTER, ['L', 'M', 'M', 'G', 'V', 'S', 'D']);
+  assert.equal(dates.WEEKDAYS_LONG[0], 'lunedì');
+});
+
+test('i18n: ogni traduzione si formatta con tutte le forme di plurale senza lasciare graffe', async () => {
+  const dir = new URL('../js/i18n/', import.meta.url);
+  for (const { code } of I18N.LANGS) {
+    if (code === 'it') continue;
+    const { default: dict } = await import(new URL(`${code}.js`, dir));
+    const entries = Object.entries(dict);
+    assert.ok(entries.length > 100, `${code}: dizionario vuoto`);
+    for (const [key, value] of entries) {
+      assert.equal(typeof value, 'string', `${code}: ${key}`);
+      for (const n of [0, 1, 2, 5, 21, 101, 1.5]) {
+        const out = I18N.formatMessage(value, new Proxy({}, { get: () => n }), code);
+        assert.ok(out.trim() && !/[{}]/.test(out), `${code}: «${key}» → «${out}» (n=${n})`);
+      }
+    }
+  }
+});
+
+/* ---------- importazione dalle note ---------- */
+
+const NP = await import('../js/notes/parse.js');
+const NB = await import('../js/notes/build.js');
+const NX = await import('../js/notes/extract.js');
+
+const NOTE = ['2025', '12.03 emicrania forte 8/10, lato sinistro, nausea, 2 oki', '13.03 ^^', 'Primi di aprile', '2.04 leggero', '5.04 ciclo', '6.04 nessun dolore'].join('\n');
+const TODAY = '2026-10-25';
+
+function readNote(text, { annotate = {}, build: buildOpts = {} } = {}) {
+  const { entries, meta } = NP.parseNotes(text, { today: TODAY });
+  const rows = NB.annotate(entries, { today: TODAY, ...annotate });
+  return { entries, meta, rows, built: NB.buildImport(rows, { defaultIntensity: 5, ...buildOpts }) };
+}
+
+test('note: date, anni, dettagli e tipo di riga', () => {
+  const { entries, meta, built } = readNote(NOTE);
+  assert.equal(entries.length, 5);
+  assert.equal(meta.order, 'dmy');
+  assert.deepEqual(entries.map((e) => e.date), ['2025-03-12', '2025-03-13', '2025-04-02', '2025-04-05', '2025-04-06']);
+  assert.deepEqual(entries.map((e) => e.kind), ['attack', 'attack', 'attack', 'menses', 'free']);
+  assert.equal(entries[0].intensity, 8);
+  assert.equal(entries[0].side, 'sx');
+  assert.ok(entries[0].symptoms.includes('Nausea'));
+  assert.deepEqual(entries[0].meds.map((m) => [m.name, m.count]), [['Ketoprofene', 2]]);
+  assert.ok(entries[1].flags.ditto && entries[1].intensity === 8, '«^^» ripete la riga precedente');
+  assert.equal(entries[2].intensity, 2);
+  assert.equal(built.episodes.length, 3, 'solo i tre attacchi diventano attacchi');
+  const first = built.episodes[0];
+  assert.equal(first.start, '2025-03-12T12:00');
+  assert.equal(first.end, first.start);
+  assert.equal(first.timeUnknown, true);
+  assert.equal(first.meds.length, 2, 'due oki = due somministrazioni');
+  assert.ok(first.note.includes('emicrania forte'));
+  assert.equal(built.days['2025-04-05'].menses, true);
+  assert.equal(built.days['2025-04-06'].free, true);
+  assert.equal(built.menses, 1);
+  assert.equal(built.freeDays, 1);
+  assert.equal(built.first, '2025-03-12');
+  assert.equal(built.last, '2025-04-06');
+});
+
+test('note: unione dei giorni consecutivi, doppioni e correzioni dell\'utente', () => {
+  const merged = readNote(NOTE, { build: { mergeConsecutive: true } }).built;
+  assert.equal(merged.episodes.length, 2);
+  assert.equal(merged.episodes[0].start, '2025-03-12T12:00');
+  assert.equal(merged.episodes[0].end, '2025-03-13T12:00');
+  assert.equal(merged.episodes[0].approxDur, 'days');
+  assert.equal(merged.episodes[0].intensity, 8);
+  assert.equal(merged.merged, 1);
+  const dup = readNote(NOTE, { annotate: { existingDays: new Set(['2025-03-12']) } });
+  assert.equal(dup.built.episodes.length, 2, 'un giorno già nel diario si salta');
+  assert.ok(dup.rows[0].issues.includes('existing') && !dup.rows[0].include);
+  const keep = readNote(NOTE, { annotate: { existingDays: new Set(['2025-03-12']), skipExisting: false } });
+  assert.equal(keep.built.episodes.length, 3);
+  const { entries } = NP.parseNotes(NOTE, { today: TODAY });
+  const overrides = new Map([
+    [entries[0].key, { intensity: 3, note: 'corretta', removedMeds: new Set(['Ketoprofene']) }],
+    [entries[2].key, { include: false }],
+    [entries[3].key, { asAttack: true, intensity: 4 }],
+  ]);
+  const fixed = readNote(NOTE, { annotate: { overrides } }).built;
+  assert.equal(fixed.episodes.length, 3, 'uno escluso, il «ciclo» promosso ad attacco');
+  assert.equal(fixed.episodes[0].intensity, 3);
+  assert.equal(fixed.episodes[0].note, 'corretta');
+  assert.equal(fixed.episodes[0].meds.length, 0);
+  assert.equal(fixed.episodes.find((e) => e.start.startsWith('2025-04-05')).intensity, 4);
+  const future = readNote('2026\n30.12 forte', { annotate: {} });
+  assert.equal(future.rows[0].issues.includes('future') && !future.rows[0].include, true, 'le date future non si importano');
+});
+
+test('note: l\'anno si deduce, i formati si leggono e i testi ostili non rompono nulla', () => {
+  const noYear = NP.parseNotes(['12.10 forte', '14.10 oki', '2.11 leggero', '5.01 forte'].join('\n'), { today: TODAY });
+  assert.deepEqual(noYear.entries.map((e) => e.date), ['2025-10-12', '2025-10-14', '2025-11-02', '2026-01-05']);
+  assert.equal(noYear.meta.yearInferred, true);
+  const us = NP.parseNotes('3/14/2025 bad migraine\n3/15/2025 took ibuprofen 400mg', { today: TODAY });
+  assert.equal(us.meta.order, 'mdy');
+  assert.deepEqual(us.entries.map((e) => e.date), ['2025-03-14', '2025-03-15']);
+  assert.equal(us.entries[1].meds[0].name, 'Ibuprofene');
+  assert.equal(NP.parseNotes('', { today: TODAY }).entries.length, 0);
+  assert.equal(NP.parseNotes('   \n\n  ', { today: TODAY }).entries.length, 0);
+  assert.equal(NP.parseNotes('lista della spesa\nlatte\nuova', { today: TODAY }).entries.length, 0);
+  assert.equal(NP.parseNotes('31.04 forte', { today: TODAY }).entries[0].date, null, 'data impossibile: segnalata, non inventata');
+  const lines = Array.from({ length: 4000 }, (_, i) => `${1 + (i % 28)}.${1 + (i % 12)}.${2000 + (i % 25)} forte ${1 + (i % 10)}/10 oki`).join('\n');
+  let t0 = Date.now();
+  assert.equal(NP.parseNotes(lines, { today: TODAY }).entries.length, 4000);
+  assert.ok(Date.now() - t0 < 15000, 'quattromila righe in tempi ragionevoli');
+  t0 = Date.now();
+  NP.parseNotes(`12.03 ${'forte, oki; '.repeat(25000)}`, { today: TODAY });
+  NP.parseNotes('1.1.1 '.repeat(40000), { today: TODAY });
+  NP.parseNotes(`12.03 ${'(('.repeat(50000)}`, { today: TODAY });
+  assert.ok(Date.now() - t0 < 15000, 'righe enormi o strane non bloccano la lettura');
+});
+
+test('note: importazione nel diario, annullamento e rimozione di un lotto', () => {
+  reset();
+  store.setFree('2025-03-13', true);
+  const snap = store.snapshotDb();
+  const { built } = readNote(NOTE);
+  const res = store.addImportedEpisodes({
+    episodes: built.episodes, days: built.days, customMeds: [{ name: 'Zalexil', cls: 'other' }, { name: 'Ibuprofene', cls: 'nsaid' }], settings: { cycle: true },
+  });
+  assert.equal(res.added, 3);
+  assert.match(res.imp, /^i[a-z0-9]+$/);
+  const db = store.getDb();
+  const eps = Object.values(db.episodes);
+  assert.equal(eps.length, 3);
+  assert.ok(eps.every((e) => e.imp === res.imp && e.timeUnknown === true));
+  assert.equal(db.days['2025-03-13'], undefined, 'un attacco importato toglie il «senza emicrania» di quel giorno');
+  assert.equal(db.days['2025-04-05'].menses, true);
+  assert.equal(db.days['2025-04-06'].free, true);
+  assert.equal(db.settings.cycle, true);
+  assert.deepEqual(db.settings.custom.meds.map((m) => m.name), ['Zalexil'], 'i farmaci già noti non si duplicano');
+  const batches = store.importBatches();
+  assert.equal(batches.length, 1);
+  assert.deepEqual([batches[0].imp, batches[0].count, batches[0].from, batches[0].to], [res.imp, 3, '2025-03-12', '2025-04-02']);
+  const back = store.parseBackup(store.exportJson());
+  assert.ok(Object.values(back.episodes).every((e) => e.imp === res.imp), 'il lotto resta nel backup');
+  store.restoreSnapshot(snap);
+  assert.equal(Object.keys(store.getDb().episodes).length, 0);
+  assert.equal(store.getDb().days['2025-03-13'].free, true, 'l\'annullamento ripristina tutto com\'era');
+  assert.equal(store.getDb().settings.cycle, false);
+  assert.equal(store.addImportedEpisodes({ episodes: built.episodes.slice(0, 1), imp: '../x' }).imp.startsWith('i'), true);
+  const again = store.addImportedEpisodes({ episodes: built.episodes });
+  assert.equal(store.importBatches().length, 2);
+  assert.equal(store.removeImportedBatch(again.imp), 3);
+  assert.equal(store.removeImportedBatch(again.imp), 0);
+  assert.equal(Object.keys(store.getDb().episodes).length, 1, 'gli altri lotti non si toccano');
+  const original = globalThis.localStorage.setItem;
+  globalThis.localStorage.setItem = () => { throw new Error('QuotaExceededError'); };
+  try {
+    assert.throws(() => store.addImportedEpisodes({ episodes: built.episodes }), /spazio esaurito/i);
+    assert.equal(Object.keys(store.getDb().episodes).length, 1, 'se non c\'è spazio non si importa nulla');
+  } finally {
+    globalThis.localStorage.setItem = original;
+  }
+});
+
+test('note: estrazione del testo da PDF, RTF, HTML, Word, OpenDocument e CSV', async () => {
+  const item = (str, x, y) => ({ str, transform: [10, 0, 0, 10, x, y], width: str.length * 5, height: 10 });
+  const rows = [['12.03', 40, 700], ['emicrania', 80, 700], ['forte', 140, 700], ['13.03', 40, 680], ['^^', 80, 680], ['15.03', 40, 660], ['leggero', 80, 660], ['20.03', 40, 580], ['oki', 80, 580]];
+  const body = rows.map(([s, x, y]) => item(s, x, y));
+  assert.deepEqual(NX.linesFromItems(body, 800), ['12.03 emicrania forte', '13.03 ^^', '15.03 leggero', '', '20.03 oki']);
+  const withBands = [...body, item('3', 300, 20), item('24/10/2026, 18:20', 40, 790)];
+  assert.deepEqual(NX.linesFromItems(withBands, 800).filter(Boolean), ['12.03 emicrania forte', '13.03 ^^', '15.03 leggero', '20.03 oki'], 'numero di pagina e intestazione di stampa scartati');
+  assert.deepEqual(NX.linesFromItems([], 800), []);
+  assert.equal(NX.textFromPages([{ items: body.slice(0, 3), height: 800 }, { items: body.slice(3, 5), height: 800 }]), '12.03 emicrania forte\n13.03 ^^');
+
+  assert.equal(NX.rtfToText("{\\rtf1\\ansi{\\fonttbl{\\f0 Arial;}}\\f0 12.03 emicrania forte\\par 13.03 caff\\'e8\\par}"), '12.03 emicrania forte\n13.03 caffè\n');
+  const clean = (s) => s.replace(/\u00a0/g, ' ').split('\n').map((x) => x.trim()).filter(Boolean);
+  assert.deepEqual(clean(NX.htmlToText('<html><head><style>p{}</style></head><body><p>12.03 emicrania&nbsp;forte</p><div>13.03 caff&egrave;<br>14.03 &#232;</div></body></html>')), ['12.03 emicrania forte', '13.03 caffè', '14.03 è']);
+  assert.equal(NX.docxToText('<w:document><w:body><w:p><w:pPr/><w:r><w:t>12.03 emicrania</w:t></w:r><w:r><w:t xml:space="preserve"> forte</w:t></w:r></w:p><w:p><w:r><w:t>13.03 ^^</w:t></w:r></w:p></w:body></w:document>'), '12.03 emicrania forte\n13.03 ^^');
+  assert.equal(NX.odtToText('<office:text><text:p>12.03 emicrania<text:s/>forte</text:p><text:p>13.03 <text:span>ok</text:span></text:p></office:text>'), '12.03 emicrania forte\n13.03 ok');
+  assert.equal(NX.csvToText('Data;Intensità;Note\n12/03/2025;8;"forte; con nausea"\n13/03/2025;3;\n'), '12/03/2025 Intensità: 8, Note: forte; con nausea\n13/03/2025 Intensità: 3');
+  assert.equal(NX.decodeText(Uint8Array.of(0xef, 0xbb, 0xbf, 0x61)), 'a');
+  assert.equal(NX.decodeText(Uint8Array.of(0x63, 0x61, 0x66, 0x66, 0xe8)), 'caffè', 'testo vecchio stile (Windows-1252)');
+  assert.equal(NX.decodeText(Uint8Array.of(0xff, 0xfe, 0x61, 0x00)), 'a');
+  assert.equal(NX.cleanPasted('a\r\nb\rc'), 'a\nb\nc');
+  assert.deepEqual(['Diario.PDF', 'a.docx', 'b.odt', 'c.rtf', 'd.htm', 'e.csv', 'foto.heic', 'x.pages', 'nota.txt'].map((name) => NX.kindOf({ name })), ['pdf', 'docx', 'odt', 'rtf', 'html', 'csv', 'image', 'unsupported', 'text']);
+
+  const txt = await NX.readNoteFile(new File(['\ufeff12.03 forte\r\n13.03 ok'], 'note.txt', { type: 'text/plain' }));
+  assert.equal(txt.kind, 'text');
+  assert.equal(txt.text.replace(/\r/g, ''), '12.03 forte\n13.03 ok');
+  const docx = await Z.createZip([{ path: 'word/document.xml', data: '<w:document><w:p><w:r><w:t>12.03 forte</w:t></w:r></w:p></w:document>' }]);
+  assert.equal((await NX.readNoteFile(new File([docx], 'diario.docx'))).text, '12.03 forte');
+  const rtf = await NX.readNoteFile(new File(['{\\rtf1 12.03 forte\\par}'], 'diario.txt'));
+  assert.equal(rtf.text.trim(), '12.03 forte', 'un RTF riconosciuto dal contenuto anche con estensione sbagliata');
+  await assert.rejects(NX.readNoteFile(new File(['x'], 'foto.png', { type: 'image/png' })), { code: 'image' });
+  await assert.rejects(NX.readNoteFile(new File(['   \n'], 'vuoto.txt')), { code: 'empty' });
+  await assert.rejects(NX.readNoteFile(new File(['x'], 'diario.pages')), { code: 'unsupported' });
+  await assert.rejects(NX.readNoteFile(new File([Uint8Array.of(0, 0, 0, 0, 1, 2, 3)], 'strano.bin')), { code: 'unsupported' });
+  await assert.rejects(NX.readNoteFile(new File(['non è uno zip'], 'rotto.docx')), { code: 'unreadable' });
+});
+
+// Lettore di note in tutte le lingue: corpora sintetici, controllo dei dizionari, parole ambigue tra lingue, robustezza con testi a caso.
+[['notes_run.mjs', 'i casi di prova in tests/notes/*.cases.json'], ['notes_lex_check.mjs', 'la struttura dei dizionari'], ['notes_collide.mjs', 'nessuna parola con significati incompatibili tra lingue'],
+  ['notes_fuzz.mjs', 'testi inventati a caso non rompono nulla e danno voci importabili', ['150', '11']]].forEach(([script, what, args = []]) => {
+  test(`note: ${what}`, () => {
+    const r = spawnSync(process.execPath, [fileURLToPath(new URL(script, import.meta.url)), ...args], { encoding: 'utf8' });
+    assert.equal(r.status, 0, `${script}\n${r.stdout || ''}${r.stderr || ''}`);
+  });
 });
