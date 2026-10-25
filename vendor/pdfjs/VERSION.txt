@@ -1,0 +1,4 @@
+pdfjs-dist 6.4.299 (build "legacy"), Mozilla PDF.js — licenza Apache-2.0 (vedi LICENSE).
+Sorgente: https://registry.npmjs.org/pdfjs-dist/-/pdfjs-dist-6.4.299.tgz
+File copiati: legacy/build/pdf.min.mjs -> pdf.min.js, legacy/build/pdf.worker.min.mjs -> pdf.worker.min.js, wasm/*.wasm con le rispettive licenze.
+Serve a mostrare tutte le pagine dei PDF della cartella clinica dentro l'app (Safari su iPhone mostra solo la prima pagina dei PDF incorporati).
