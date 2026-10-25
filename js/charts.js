@@ -1,5 +1,9 @@
 import { h } from './dom.js';
 import { INTENSITY_COLORS } from './data.js';
+import { t, tv } from './i18n.js';
+import { num } from './format.js';
+
+const FIT = 'xMidYMid meet'; // i18n-ignore
 
 export function axisMax(maxValue, floor = 4) {
   const m = Math.max(floor, Math.ceil(maxValue / 2) * 2);
@@ -23,10 +27,10 @@ export function barChart({
   const bw = Math.min(26, Math.max(2, slot * 0.7));
   const ticks = max % 2 === 0 ? [0, max / 2, max] : [0, max];
   const kids = [];
-  ticks.forEach((t) => {
-    const y = padT + innerH * (1 - t / max);
+  ticks.forEach((tick) => {
+    const y = padT + innerH * (1 - tick / max);
     kids.push(h('line', { class: 'grid', x1: padL, x2: width - padR, y1: y, y2: y }));
-    kids.push(h('text', { class: 'ax', x: padL - 5, y: y + 3.5, 'text-anchor': 'end' }, Number.isInteger(t) ? String(t) : t.toFixed(1)));
+    kids.push(h('text', { class: 'ax', x: padL - 5, y: y + 3.5, 'text-anchor': 'end' }, Number.isInteger(tick) ? String(tick) : num(tick, 1)));
   });
   data.forEach((d, i) => {
     const bh = Math.max(0, (innerH * Math.min(d.value, max)) / max);
@@ -45,12 +49,12 @@ export function barChart({
     }
   });
   return h('svg', {
-    class: 'chart', viewBox: `0 0 ${width} ${height}`, role: 'img', 'aria-label': ariaLabel, preserveAspectRatio: 'xMidYMid meet',
+    class: 'chart', viewBox: `0 0 ${width} ${height}`, role: 'img', 'aria-label': ariaLabel, preserveAspectRatio: FIT,
   }, ...kids);
 }
 
 /** Griglia "anno in pixel": una riga per mese, una colonna per giorno. */
-export function yearPixels(rows, { ariaLabel = 'Panoramica degli ultimi 12 mesi' } = {}) {
+export function yearPixels(rows, { ariaLabel = t('Panoramica degli ultimi 12 mesi') } = {}) {
   const cell = 9.6;
   const gap = 1.8;
   const labelW = 28;
@@ -71,26 +75,28 @@ export function yearPixels(rows, { ariaLabel = 'Panoramica degli ultimi 12 mesi'
     });
   });
   return h('svg', {
-    class: 'chart', viewBox: `0 0 ${width} ${height}`, role: 'img', 'aria-label': ariaLabel, preserveAspectRatio: 'xMidYMid meet',
+    class: 'chart', viewBox: `0 0 ${width} ${height}`, role: 'img', 'aria-label': ariaLabel, preserveAspectRatio: FIT,
   }, ...kids);
 }
 
 export function intensityLegend() {
   return h('div', { class: 'legend' }, [
-    ['Lieve', INTENSITY_COLORS[1]],
-    ['Moderata', INTENSITY_COLORS[4]],
-    ['Forte', INTENSITY_COLORS[7]],
-    ['Molto forte', INTENSITY_COLORS[9]],
+    [t('Lieve'), INTENSITY_COLORS[1]],
+    [t('Moderata'), INTENSITY_COLORS[4]],
+    [t('Forte'), INTENSITY_COLORS[7]],
+    [t('Molto forte'), INTENSITY_COLORS[9]],
   ].map(([label, color]) => h('span', { class: 'legend-item' }, h('span', { class: 'swatch', style: { background: color } }), label)));
 }
 
 let patternSeq = 0;
 const monthDiff = (a, b) => (Number(b.slice(0, 4)) - Number(a.slice(0, 4))) * 12 + (Number(b.slice(5, 7)) - Number(a.slice(5, 7)));
-const fmtNum = (v) => (Math.round(v * 10) / 10).toString().replace('.', ',');
+const round1 = (v) => Math.round(v * 10) / 10;
+const fmtNum = (v) => num(round1(v));
+const daysTitle = (label, value) => t('{label}: {n, plural, one {# giorno} other {# giorni}}', { label, n: round1(value) });
 
 function hatchDefs() {
   patternSeq += 1;
-  const id = `hatch-${patternSeq}`;
+  const id = `hatch-${patternSeq}`; // i18n-ignore
   return {
     id,
     node: h('defs', {}, h('pattern', {
@@ -118,7 +124,7 @@ function lanes(items) {
  * Andamento a lungo termine: barre (giorni/mese) dal diario o stimate dalla storia (tratteggiate),
  * linea dell'intensità e, sotto, le fasce delle terapie.
  */
-export function longTermChart(series, { width = 340, ariaLabel = 'Andamento a lungo termine' } = {}) {
+export function longTermChart(series, { width = 340, ariaLabel = t('Andamento a lungo termine') } = {}) {
   const { points, therapies, unit } = series;
   const padL = 24;
   const padR = 22;
@@ -142,18 +148,20 @@ export function longTermChart(series, { width = 340, ariaLabel = 'Andamento a lu
   const y = (v) => padT + plotH * (1 - v / top);
   const hatch = hatchDefs();
   const kids = [hatch.node];
-  [0, top / 2, top].forEach((t) => {
-    kids.push(h('line', { class: 'grid', x1: padL, x2: width - padR, y1: y(t), y2: y(t) }));
-    kids.push(h('text', { class: 'ax', x: padL - 5, y: y(t) + 3.5, 'text-anchor': 'end' }, String(t)));
+  [0, top / 2, top].forEach((tick) => {
+    kids.push(h('line', { class: 'grid', x1: padL, x2: width - padR, y1: y(tick), y2: y(tick) }));
+    kids.push(h('text', { class: 'ax', x: padL - 5, y: y(tick) + 3.5, 'text-anchor': 'end' }, String(tick)));
   });
-  [0, 5, 10].forEach((t) => kids.push(h('text', {
-    class: 'ax', x: width - padR + 4, y: padT + plotH * (1 - t / 10) + 3.5, style: { fill: 'var(--orange)' },
-  }, String(t))));
+  [0, 5, 10].forEach((tick) => kids.push(h('text', {
+    class: 'ax', x: width - padR + 4, y: padT + plotH * (1 - tick / 10) + 3.5, style: { fill: 'var(--orange)' },
+  }, String(tick))));
   const dots = [];
   points.forEach((p, i) => {
     const x = padL + i * slot + (slot - bw) / 2;
     if (p.value != null) {
       const bh = Math.max(1, plotH * Math.min(p.value, top) / top);
+      const estimate = p.source === 'history' ? ` ${t('(stima)')}` : '';
+      const intensity = p.intensity != null ? `, ${t('intensità {n}', { n: fmtNum(p.intensity) })}` : '';
       kids.push(h('rect', {
         class: `bar${p.source === 'history' ? ' est' : ''}`,
         x,
@@ -162,7 +170,7 @@ export function longTermChart(series, { width = 340, ariaLabel = 'Andamento a lu
         height: bh,
         rx: Math.min(3, bw / 2),
         style: p.source === 'history' ? { fill: `url(#${hatch.id})` } : (p.partial ? { opacity: 0.55 } : null),
-      }, h('title', {}, `${p.title || p.label}: ${fmtNum(p.value)} giorni${p.source === 'history' ? ' (stima)' : ''}${p.intensity != null ? `, intensità ${fmtNum(p.intensity)}` : ''}`)));
+      }, h('title', {}, `${daysTitle(p.title || p.label, p.value)}${estimate}${intensity}`)));
     }
     if (p.intensity != null) dots.push({ x: x + bw / 2, y: padT + plotH * (1 - p.intensity / 10), i });
   });
@@ -193,24 +201,25 @@ export function longTermChart(series, { width = 340, ariaLabel = 'Andamento a lu
   });
 
   const nowIso = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-  const bands = lanes(therapies.map((t) => {
-    const x0 = xOfDate(t.start < `${first}-01` ? `${first}-01` : t.start);
-    const x1 = Math.max(x0 + 3, xOfDate(t.end && t.end < nowIso ? t.end : nowIso));
-    return { t, x0, x1 };
+  const bands = lanes(therapies.map((therapy) => {
+    const x0 = xOfDate(therapy.start < `${first}-01` ? `${first}-01` : therapy.start);
+    const x1 = Math.max(x0 + 3, xOfDate(therapy.end && therapy.end < nowIso ? therapy.end : nowIso));
+    return { therapy, x0, x1 };
   }));
   const laneTop = padT + plotH + 20;
   const laneH = 13;
-  bands.forEach(({ t, x0, x1, lane }) => {
+  bands.forEach(({ therapy, x0, x1, lane }) => {
     const yy = laneTop + lane * (laneH + 3);
-    const color = t.color || 'var(--accent)';
-    kids.push(h('rect', { x: x0, y: yy, width: x1 - x0, height: laneH, rx: 4, style: { fill: color } }, h('title', {}, t.name)));
-    const label = t.name.length > 22 ? `${t.name.slice(0, 21)}…` : t.name;
+    const color = therapy.color || 'var(--accent)';
+    const name = tv(therapy.name);
+    kids.push(h('rect', { x: x0, y: yy, width: x1 - x0, height: laneH, rx: 4, style: { fill: color } }, h('title', {}, name)));
+    const label = name.length > 22 ? `${name.slice(0, 21)}…` : name;
     if (x1 - x0 > label.length * 5.2 + 8) kids.push(h('text', { class: 'band-label', x: x0 + 5, y: yy + 9.5 }, label));
   });
   const lanesCount = bands.length ? Math.max(...bands.map((b) => b.lane)) + 1 : 0;
   const height = laneTop + lanesCount * (laneH + 3) + 4;
   return h('svg', {
-    class: 'chart', viewBox: `0 0 ${width} ${height}`, role: 'img', 'aria-label': ariaLabel, preserveAspectRatio: 'xMidYMid meet',
+    class: 'chart', viewBox: `0 0 ${width} ${height}`, role: 'img', 'aria-label': ariaLabel, preserveAspectRatio: FIT,
   }, ...kids);
 }
 
@@ -227,9 +236,9 @@ export function therapyChart({ monthly, baseline = null, startMonth, color = 'va
   const top = Math.ceil(max / 4) * 4;
   const y = (v) => padT + plotH * (1 - v / top);
   const kids = [];
-  [0, top / 2, top].forEach((t) => {
-    kids.push(h('line', { class: 'grid', x1: padL, x2: width - padR, y1: y(t), y2: y(t) }));
-    kids.push(h('text', { class: 'ax', x: padL - 5, y: y(t) + 3.5, 'text-anchor': 'end' }, String(t)));
+  [0, top / 2, top].forEach((tick) => {
+    kids.push(h('line', { class: 'grid', x1: padL, x2: width - padR, y1: y(tick), y2: y(tick) }));
+    kids.push(h('text', { class: 'ax', x: padL - 5, y: y(tick) + 3.5, 'text-anchor': 'end' }, String(tick)));
   });
   const startIdx = monthly.findIndex((m) => m.month >= startMonth);
   if (startIdx > 0) {
@@ -237,7 +246,7 @@ export function therapyChart({ monthly, baseline = null, startMonth, color = 'va
     kids.push(h('line', {
       class: 'grid dash', x1: xs, x2: xs, y1: padT - 6, y2: padT + plotH,
     }));
-    kids.push(h('text', { class: 'ax', x: xs + 3, y: padT - 4 }, 'inizio'));
+    kids.push(h('text', { class: 'ax', x: xs + 3, y: padT - 4 }, t('inizio')));
   }
   monthly.forEach((m, i) => {
     const x = padL + i * slot + (slot - bw) / 2;
@@ -246,9 +255,10 @@ export function therapyChart({ monthly, baseline = null, startMonth, color = 'va
     } else {
       const bh = Math.max(1.5, plotH * Math.min(m.value, top) / top);
       const before = m.month < startMonth;
+      const partial = m.partial ? ` ${t('(mese incompleto, stima su 30 giorni)')}` : '';
       kids.push(h('rect', {
         x, y: padT + plotH - bh, width: bw, height: bh, rx: Math.min(4, bw / 2), style: { fill: before ? 'var(--gray)' : color, opacity: m.partial ? 0.5 : (before ? 0.55 : 1) },
-      }, h('title', {}, `${m.label}: ${fmtNum(m.value)} giorni${m.partial ? ' (mese incompleto, stima su 30 giorni)' : ''}`)));
+      }, h('title', {}, `${daysTitle(m.label, m.value)}${partial}`)));
       if (n <= 14) kids.push(h('text', { class: 'ax val', x: x + bw / 2, y: padT + plotH - bh - 3, 'text-anchor': 'middle' }, fmtNum(m.value)));
     }
     const every = Math.max(1, Math.ceil(n / 9));
@@ -258,10 +268,10 @@ export function therapyChart({ monthly, baseline = null, startMonth, color = 'va
     kids.push(h('line', {
       class: 'base-line', x1: padL, x2: width - padR, y1: y(baseline), y2: y(baseline),
     }));
-    kids.push(h('text', { class: 'ax', x: width - padR, y: y(baseline) - 4, 'text-anchor': 'end', style: { fill: 'var(--orange)' } }, `prima: ${fmtNum(baseline)}`));
+    kids.push(h('text', { class: 'ax', x: width - padR, y: y(baseline) - 4, 'text-anchor': 'end', style: { fill: 'var(--orange)' } }, t('prima: {n}', { n: fmtNum(baseline) })));
   }
   return h('svg', {
-    class: 'chart', viewBox: `0 0 ${width} ${padT + plotH + 18}`, role: 'img', 'aria-label': 'Giorni di emicrania al mese prima e durante la terapia', preserveAspectRatio: 'xMidYMid meet',
+    class: 'chart', viewBox: `0 0 ${width} ${padT + plotH + 18}`, role: 'img', 'aria-label': t('Giorni di emicrania al mese prima e durante la terapia'), preserveAspectRatio: FIT,
   }, ...kids);
 }
 
@@ -270,14 +280,16 @@ export function cycleChart(weeks) {
   return barChart({
     data: weeks.map((w) => ({
       label: w.label,
-      value: w.rate == null ? 0 : Math.round(w.rate * 10) / 10,
-      color: w.label === 'Oltre' ? 'var(--orange)' : null,
-      title: w.rate == null ? `${w.label} settimana: dati insufficienti` : `${w.label} settimana: ${fmtNum(w.rate)} giorni di emicrania su 7`,
+      value: w.rate == null ? 0 : round1(w.rate),
+      color: w.over ? 'var(--orange)' : null,
+      title: w.rate == null
+        ? t('{label} settimana: dati insufficienti', { label: w.label })
+        : t('{rate, plural, one {{label} settimana: # giorno di emicrania su 7} other {{label} settimana: # giorni di emicrania su 7}}', { label: w.label, rate: round1(w.rate) }),
     })),
     yMax: 7,
     height: 130,
     showValues: true,
     valueFormat: fmtNum,
-    ariaLabel: 'Giorni di emicrania per settimana dall’ultima somministrazione',
+    ariaLabel: t('Giorni di emicrania per settimana dall’ultima somministrazione'),
   });
 }

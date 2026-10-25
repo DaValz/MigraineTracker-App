@@ -2,6 +2,8 @@
  * Archivio dei file della cartella clinica (PDF e foto) in IndexedDB.
  * I metadati dei documenti stanno nel database principale; qui solo i contenuti binari.
  */
+import { t } from './i18n.js';
+
 const DB_NAME = 'emicrania-files';
 const DB_VERSION = 1;
 const FILES = 'files';
@@ -15,7 +17,7 @@ function openDb() {
   if (dbPromise) return dbPromise;
   dbPromise = new Promise((resolve, reject) => {
     if (!filesSupported()) {
-      reject(new Error('Archivio dei documenti non disponibile in questo browser.'));
+      reject(new Error(t('Archivio dei documenti non disponibile in questo browser.')));
       return;
     }
     const req = indexedDB.open(DB_NAME, DB_VERSION);
@@ -32,8 +34,8 @@ function openDb() {
       };
       resolve(d);
     };
-    req.onerror = () => reject(req.error || new Error('Impossibile aprire l’archivio dei documenti.'));
-    req.onblocked = () => reject(new Error('Archivio dei documenti occupato: chiudi le altre finestre dell’app.'));
+    req.onerror = () => reject(req.error || new Error(t('Impossibile aprire l’archivio dei documenti.')));
+    req.onblocked = () => reject(new Error(t('Archivio dei documenti occupato: chiudi le altre finestre dell’app.')));
   });
   dbPromise.catch(() => { dbPromise = null; });
   return dbPromise;
@@ -41,22 +43,22 @@ function openDb() {
 
 function run(stores, mode, body) {
   return openDb().then((d) => new Promise((resolve, reject) => {
-    let t;
+    let txn;
     try {
-      t = d.transaction(stores, mode);
+      txn = d.transaction(stores, mode);
     } catch (e) {
       reject(e);
       return;
     }
     const out = { value: undefined };
-    t.oncomplete = () => resolve(out.value);
-    t.onerror = () => reject(t.error || new Error('Errore dell’archivio dei documenti.'));
-    t.onabort = () => reject(t.error || new Error('Operazione sull’archivio annullata (spazio esaurito?).'));
+    txn.oncomplete = () => resolve(out.value);
+    txn.onerror = () => reject(txn.error || new Error(t('Errore dell’archivio dei documenti.')));
+    txn.onabort = () => reject(txn.error || new Error(t('Operazione sull’archivio annullata (spazio esaurito?).')));
     try {
-      body(t, out);
+      body(txn, out);
     } catch (e) {
       try {
-        t.abort();
+        txn.abort();
       } catch (e2) { /* già chiusa */ }
       reject(e);
     }
@@ -73,7 +75,7 @@ async function putRecord(store, key, blob, meta = {}) {
   const rec = { blob, type: blob.type || meta.type || '', name: meta.name || '', size: blob.size, savedAt: Date.now() };
   if (!blobsUnsupported) {
     try {
-      await run([store], 'readwrite', (t) => t.objectStore(store).put(rec, key));
+      await run([store], 'readwrite', (txn) => txn.objectStore(store).put(rec, key));
       return;
     } catch (e) {
       // Alcuni motori non salvano i Blob in IndexedDB: si ripiega sui byte.
@@ -81,7 +83,7 @@ async function putRecord(store, key, blob, meta = {}) {
     }
   }
   const buf = await blob.arrayBuffer();
-  await run([store], 'readwrite', (t) => t.objectStore(store).put({ ...rec, blob: null, buf }, key));
+  await run([store], 'readwrite', (txn) => txn.objectStore(store).put({ ...rec, blob: null, buf }, key));
 }
 
 const toBlob = (rec) => {
@@ -105,26 +107,26 @@ export async function saveThumb(fid, thumb) {
 }
 
 export async function loadFile(fid) {
-  const rec = await run([FILES], 'readonly', (t, out) => reqValue(t.objectStore(FILES).get(fid), out));
+  const rec = await run([FILES], 'readonly', (txn, out) => reqValue(txn.objectStore(FILES).get(fid), out));
   return toBlob(rec);
 }
 
 export async function loadThumb(fid) {
-  const rec = await run([THUMBS], 'readonly', (t, out) => reqValue(t.objectStore(THUMBS).get(fid), out));
+  const rec = await run([THUMBS], 'readonly', (txn, out) => reqValue(txn.objectStore(THUMBS).get(fid), out));
   return toBlob(rec);
 }
 
 export async function listFids() {
-  return (await run([FILES], 'readonly', (t, out) => reqValue(t.objectStore(FILES).getAllKeys(), out))) || [];
+  return (await run([FILES], 'readonly', (txn, out) => reqValue(txn.objectStore(FILES).getAllKeys(), out))) || [];
 }
 
 export async function deleteFiles(fids) {
   const list = [...fids];
   if (!list.length) return;
-  await run([FILES, THUMBS], 'readwrite', (t) => {
+  await run([FILES, THUMBS], 'readwrite', (txn) => {
     list.forEach((fid) => {
-      t.objectStore(FILES).delete(fid);
-      t.objectStore(THUMBS).delete(fid);
+      txn.objectStore(FILES).delete(fid);
+      txn.objectStore(THUMBS).delete(fid);
     });
   });
 }
@@ -143,9 +145,9 @@ export async function gcFiles(keep) {
 
 export async function clearFiles() {
   if (!filesSupported()) return;
-  await run([FILES, THUMBS], 'readwrite', (t) => {
-    t.objectStore(FILES).clear();
-    t.objectStore(THUMBS).clear();
+  await run([FILES, THUMBS], 'readwrite', (txn) => {
+    txn.objectStore(FILES).clear();
+    txn.objectStore(THUMBS).clear();
   });
 }
 
@@ -169,14 +171,14 @@ export function loadImage(blob) {
     img.onload = () => resolve({ img, url, width: img.naturalWidth, height: img.naturalHeight });
     img.onerror = () => {
       URL.revokeObjectURL(url);
-      reject(new Error('Immagine non leggibile'));
+      reject(new Error(t('Immagine non leggibile')));
     };
     img.src = url;
   });
 }
 
 const canvasBlob = (canvas, type, quality) => new Promise((resolve, reject) => {
-  canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('Conversione dell’immagine non riuscita'))), type, quality);
+  canvas.toBlob((b) => (b ? resolve(b) : reject(new Error(t('Conversione dell’immagine non riuscita')))), type, quality);
 });
 
 export async function drawScaled(source, w, h, maxSide, quality = 0.82) {

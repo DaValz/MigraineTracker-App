@@ -1,0 +1,229 @@
+[
+  {
+    "name": "diario con encabezados de año y de mes",
+    "lines": [
+      "Diario de migraña",
+      "2025",
+      "3/03 migraña fuerte 8/10, lado izquierdo, náuseas y fotofobia (ibuprofeno 600 no hizo efecto)",
+      "4/03 igual",
+      "5/03 dolor leve en la frente",
+      "6/03",
+      "12-13/03 dolor en las sienes y en la nuca, me vino la regla",
+      "A principios de abril",
+      "2/04 por la mañana, derecha, aura visual, tomé sumatriptán",
+      "(luego mejoró)",
+      "2024",
+      "03/01/2024 me desperté con dolor muy fuerte en el ojo derecho",
+      "4/01 leve"
+    ],
+    "count": 8,
+    "order": "dmy",
+    "firstDate": "2024-01-03",
+    "lastDate": "2025-04-02",
+    "expect": [
+      { "date": "2025-03-03", "intensity": 8, "side": "sx", "symptoms": ["Nausea", "Sensibilità alla luce"], "meds": [{ "name": "Ibuprofene", "count": 1, "dose": "600 mg", "effect": 0 }] },
+      { "date": "2025-03-04", "intensity": 8, "side": "sx", "flags": { "ditto": true } },
+      { "date": "2025-03-05", "intensity": 2, "areas": ["Fronte"] },
+      { "date": "2025-03-06", "flags": { "noDetails": true } },
+      { "date": "2025-03-12", "endDate": "2025-03-13", "areasHas": ["Tempie", "Nuca"], "menses": true, "mensesToday": true },
+      { "date": "2025-04-02", "side": "dx", "aura": ["Visiva (luci, zig-zag, macchie)"], "type": "con_aura", "meds": [{ "name": "Sumatriptan" }] },
+      { "date": "2024-01-03", "intensity": 8, "side": "dx", "areas": ["Occhi"] },
+      { "date": "2024-01-04", "intensity": 2 }
+    ]
+  },
+  {
+    "name": "meses como títulos y solo el día en las líneas",
+    "lines": [
+      "Junio 2024",
+      "26 migraña fuerte, ibuprofeno",
+      "27 sin dolor, todo bien",
+      "28 leve",
+      "Julio",
+      "3 pulsante a la izquierda, náuseas",
+      "2 ibuprofeno por un dolor fuerte"
+    ],
+    "count": 4,
+    "expect": [
+      { "date": "2024-06-26", "intensity": 7, "meds": [{ "name": "Ibuprofene" }] },
+      { "date": "2024-06-27", "kind": "free" },
+      { "date": "2024-06-28", "intensity": 2 },
+      { "date": "2024-07-03", "side": "sx", "qualityHas": ["Pulsante"], "symptomsHas": ["Nausea"], "meds": [{ "name": "Ibuprofene", "count": 2 }] }
+    ]
+  },
+  {
+    "name": "sin año: se deduce del orden y de la fecha de hoy",
+    "today": "2026-10-25",
+    "lines": ["12/10 fuerte", "14/10 ibuprofeno", "2/11 leve", "5/01 fuerte", "23/10 soportable"],
+    "count": 5,
+    "expect": [
+      { "date": "2025-10-12", "intensity": 7 },
+      { "date": "2025-10-14", "meds": [{ "name": "Ibuprofene" }] },
+      { "date": "2025-11-02", "intensity": 2 },
+      { "date": "2026-01-05", "intensity": 7 },
+      { "date": "2026-10-23", "intensity": 4 }
+    ]
+  },
+  {
+    "name": "fechas en formas distintas",
+    "lines": [
+      "26/06/24 fuerte",
+      "- 27.06.2024 leve",
+      "• 28-6-2024 ibuprofeno",
+      "1. 29 de junio de 2024 pulsante",
+      "Sábado 30 de junio de 2024: izquierda",
+      "2024-07-01 derecha",
+      "del 3 al 5 de julio de 2024 migraña durante 3 días",
+      "7 jul 2024 náuseas"
+    ],
+    "count": 8,
+    "expect": [
+      { "date": "2024-06-26", "intensity": 7 },
+      { "date": "2024-06-27", "intensity": 2 },
+      { "date": "2024-06-28", "meds": [{ "name": "Ibuprofene" }] },
+      { "date": "2024-06-29", "qualityHas": ["Pulsante"] },
+      { "date": "2024-06-30", "side": "sx" },
+      { "date": "2024-07-01", "side": "dx" },
+      { "date": "2024-07-03", "endDate": "2024-07-05" },
+      { "date": "2024-07-07", "symptomsHas": ["Nausea"] }
+    ]
+  },
+  {
+    "name": "fármacos: cantidades, dosis, efectos y nombres que no están en el catálogo",
+    "lines": [
+      "2025",
+      "1/02 tomé 2 ibuprofeno y un triptán",
+      "2/02 frontal (ibuprofeno)x2 no se me quitó",
+      "3/02 Nolotil 575 funcionó",
+      "4/02 imigran 100 sin efecto, luego tomé ibuprofeno",
+      "5/02 tomé Zalexil 20 mg",
+      "6/02 paracetamol, ningún efecto",
+      "7/02 cogí frío, cabeza pesada",
+      "8/02 dos pastillas de ibuprofeno y tempra"
+    ],
+    "count": 8,
+    "expect": [
+      { "meds": [{ "name": "Ibuprofene", "count": 2 }, { "name": "Triptano", "count": 1 }] },
+      { "meds": [{ "name": "Ibuprofene", "count": 2, "effect": 0 }] },
+      { "meds": [{ "name": "Metamizolo", "dose": "575 mg", "effect": 2 }] },
+      { "meds": [{ "name": "Sumatriptan", "dose": "100 mg", "effect": 0 }, { "name": "Ibuprofene", "effect": null }] },
+      { "meds": [{ "name": "Zalexil", "dose": "20 mg" }] },
+      { "meds": [{ "name": "Paracetamolo", "effect": 0 }] },
+      { "meds": [], "triggersHas": ["Freddo"], "qualityHas": ["Pressante / a cerchio"] },
+      { "meds": [{ "name": "Ibuprofene", "count": 2 }, { "name": "Paracetamolo" }] }
+    ]
+  },
+  {
+    "name": "factores, síntomas, negaciones y regla",
+    "lines": [
+      "2025",
+      "10/05 dormí poco, estrés, náuseas y vómitos",
+      "11/05 sin náuseas, después del café",
+      "12/05 sin café, dolor de cabeza desde la nuca",
+      "13/05 (mañana regla) frontal",
+      "14/05 primer día de regla, fuerte",
+      "15/05 sensibilidad a la luz y al ruido, calor"
+    ],
+    "count": 6,
+    "expect": [
+      { "triggers": ["Poco sonno", "Stress"], "symptoms": ["Nausea", "Vomito"] },
+      { "symptoms": [], "triggers": ["Caffeina"] },
+      { "triggers": ["Astinenza da caffeina"], "areasHas": ["Nuca"] },
+      { "menses": true, "mensesToday": false, "triggersHas": ["Ciclo mestruale"] },
+      { "menses": true, "mensesToday": true, "intensity": 7 },
+      { "symptoms": ["Sensibilità alla luce", "Sensibilità ai rumori"], "triggers": ["Caldo"] }
+    ]
+  },
+  {
+    "name": "aura, lado del dolor y urgencias",
+    "lines": [
+      "2025",
+      "20/06 aura visual a la derecha, dolor a la izquierda, tomé triptán",
+      "21/06 sin dolor pero alteraciones visuales y hormigueo en la mano derecha, fui a urgencias",
+      "22/06 sin aura, sien derecha"
+    ],
+    "count": 3,
+    "expect": [
+      { "side": "sx", "aura": ["Visiva (luci, zig-zag, macchie)"], "type": "con_aura" },
+      { "intensity": 1, "side": "", "aura": ["Visiva (luci, zig-zag, macchie)", "Sensitiva (formicolii)"], "er": true },
+      { "side": "dx", "aura": [], "type": "senza_aura", "areas": ["Tempie"] }
+    ]
+  },
+  {
+    "name": "líneas partidas, listas y varias fechas en una línea",
+    "lines": [
+      "2025",
+      "8/03 migraña fuerte que duró todo el día",
+      "se me pasó solo por la noche",
+      "",
+      "9/03 leve; 10/03 fuerte; 11/03 nada",
+      "valoración 7 con ibuprofeno",
+      "visita con el neurólogo el 15/03 a las 10",
+      "16/03 control, resonancia reservada"
+    ],
+    "count": 5,
+    "expect": [
+      { "date": "2025-03-08", "intensity": 7, "approxDur": "12to24" },
+      { "date": "2025-03-09", "intensity": 2 },
+      { "date": "2025-03-10", "intensity": 7 },
+      { "date": "2025-03-11" },
+      { "date": "2025-03-16", "kind": "other" }
+    ]
+  },
+  {
+    "name": "intensidad en números y en palabras",
+    "lines": [
+      "2025",
+      "1/06 dolor 7 sobre 10",
+      "2/06 un 8 de 10 con náuseas",
+      "3/06 intensidad 6",
+      "4/06 dolor de 9, insoportable",
+      "5/06 dolor soportable",
+      "6/06 muy fuerte, el peor de mi vida",
+      "7/06 ligero, luego empeoró y fue muy fuerte"
+    ],
+    "count": 7,
+    "expect": [
+      { "intensity": 7 },
+      { "intensity": 8, "symptomsHas": ["Nausea"] },
+      { "intensity": 6 },
+      { "intensity": 9 },
+      { "intensity": 4 },
+      { "intensity": 10 },
+      { "intensity": 8 }
+    ]
+  },
+  {
+    "name": "fechas imposibles y desordenadas",
+    "lines": ["2025", "31/04 fuerte", "29/02 leve", "30/04 fuerte", "2/04 ibuprofeno"],
+    "count": 4,
+    "expect": [
+      { "date": null },
+      { "date": null },
+      { "date": "2025-04-30" },
+      { "date": "2025-04-02" }
+    ]
+  },
+  {
+    "name": "líneas solo regla, días sin dolor y citas no son ataques",
+    "lines": [
+      "2025",
+      "5/05 regla",
+      "6/05 inicio de la regla",
+      "7/05 mañana regla",
+      "8/05 sin dolor",
+      "9/05 estoy bien",
+      "10/05 cita con el neurólogo",
+      "11/05 dolor de cabeza, regla"
+    ],
+    "count": 7,
+    "expect": [
+      { "date": "2025-05-05", "kind": "menses", "mensesToday": true },
+      { "date": "2025-05-06", "kind": "menses", "mensesToday": true },
+      { "date": "2025-05-07", "kind": "other", "mensesToday": false },
+      { "date": "2025-05-08", "kind": "free" },
+      { "date": "2025-05-09", "kind": "free" },
+      { "date": "2025-05-10", "kind": "other" },
+      { "date": "2025-05-11", "kind": "attack", "mensesToday": true }
+    ]
+  }
+]

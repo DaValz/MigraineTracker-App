@@ -1,5 +1,6 @@
 import { h, replaceChildren } from '../dom.js';
 import { icon } from '../icons.js';
+import { t, tv } from '../i18n.js';
 import * as store from '../store.js';
 import {
   openPage, openSheet, openDialog, confirmDialog, toast, row, group, section, footnote, field, button, card, cardTitle, chipGroup, stepper, textArea,
@@ -14,7 +15,7 @@ import { getIndex } from '../analysis.js';
 import {
   clinicalSummary, summaryPlainText, historySections, historyCompleteness, fmtMonthRange, fmtFuzzyDate,
 } from '../clinical.js';
-import { num, plural } from '../format.js';
+import { num } from '../format.js';
 import { shareText } from '../exporter.js';
 import { openTherapies } from './therapies.js';
 
@@ -24,17 +25,17 @@ const YEAR = () => new Date().getFullYear();
 /** Pagina di modifica con Salva/Annulla e conferma se ci sono modifiche. */
 function editPage({ title, draft, build, onSave }) {
   const initial = JSON.stringify(draft);
-  const saveBtn = h('button', { type: 'button', class: 'bar-btn solid' }, 'Salva');
+  const saveBtn = h('button', { type: 'button', class: 'bar-btn solid' }, t('Salva'));
   const page = openPage({
     title,
-    backLabel: 'Annulla',
+    backLabel: t('Annulla'),
     right: saveBtn,
     onBack: async (p) => {
       if (JSON.stringify(draft) === initial) {
         p.close();
         return;
       }
-      if (await confirmDialog({ title: 'Scartare le modifiche?', confirmLabel: 'Scarta', cancelLabel: 'Continua', danger: true })) p.close();
+      if (await confirmDialog({ title: t('Scartare le modifiche?'), confirmLabel: t('Scarta'), cancelLabel: t('Continua§edit'), danger: true })) p.close();
     },
   });
   replaceChildren(page.body, ...build(draft));
@@ -42,16 +43,16 @@ function editPage({ title, draft, build, onSave }) {
     try {
       if (onSave(draft) === false) return;
     } catch (e) {
-      toast(e.message || 'Impossibile salvare', { tone: 'error' });
+      toast(e.message || t('Impossibile salvare'), { tone: 'error' });
       return;
     }
     page.close();
-    toast('Salvato');
+    toast(t('Salvato'));
   });
   return page;
 }
 
-function yearSelect({ value, onChange, label, from = 1930, to = YEAR(), empty = 'Non indicato' }) {
+function yearSelect({ value, onChange, label, from = 1930, to = YEAR(), empty = t('Non indicato') }) {
   const sel = h('select', { class: 'input select', 'aria-label': label }, h('option', { value: '' }, empty));
   for (let y = to; y >= from; y -= 1) sel.appendChild(h('option', { value: String(y) }, String(y)));
   sel.value = value ? String(value) : '';
@@ -59,17 +60,17 @@ function yearSelect({ value, onChange, label, from = 1930, to = YEAR(), empty = 
   return sel;
 }
 
-function multiWithCustom({ base, selected, onChange, addLabel = '+ Altro', placeholder = '' }) {
+function multiWithCustom({ base, selected, onChange, addLabel = t('+ Altro'), placeholder = '' }) {
   const box = h('div');
   let sel = [...selected];
   const render = () => {
     const opts = [...base, ...sel.filter((x) => !base.includes(x))];
     const chips = chipGroup({ options: opts, value: sel, multi: true, onChange: (v) => { sel = v; onChange(v); } });
-    const input = h('input', { class: 'input', maxlength: 60, placeholder, 'aria-label': 'Aggiungi voce' });
+    const input = h('input', { class: 'input', maxlength: 60, placeholder, 'aria-label': t('Aggiungi voce') });
     const add = h('button', { type: 'button', class: 'chip add' }, addLabel);
     add.addEventListener('click', async () => {
       const v = await openDialog({
-        title: 'Aggiungi', content: h('div', { class: 'dlg-content' }, input), dismissValue: null, buttons: [{ label: 'Annulla', value: null }, { label: 'Aggiungi', kind: 'primary', onClick: (done) => done(input.value.trim()) }],
+        title: t('Aggiungi'), content: h('div', { class: 'dlg-content' }, input), dismissValue: null, buttons: [{ label: t('Annulla'), value: null }, { label: t('Aggiungi'), kind: 'primary', onClick: (done) => done(input.value.trim()) }],
       });
       if (v && !sel.includes(v)) {
         sel = [...sel, v];
@@ -92,31 +93,31 @@ function openProfileEditor() {
     birthYear: hst.birthYear, sex: hst.sex, onsetAge: hst.onsetAge, diagnoses: [...hst.diagnoses], diagYear: hst.diagYear, diagBy: hst.diagBy,
   };
   return editPage({
-    title: 'Chi sono',
+    title: t('Chi sono'),
     draft,
     build: (d) => [
       card(
-        field({ label: 'Anno di nascita', control: yearSelect({ value: d.birthYear, label: 'Anno di nascita', onChange: (v) => { d.birthYear = v; } }) }),
-        field({ label: 'Sesso', control: chipGroup({ options: SEXES.map((s) => ({ value: s.id, label: s.label })), value: d.sex, onChange: (v) => { d.sex = v || ''; } }) }),
+        field({ label: t('Anno di nascita'), control: yearSelect({ value: d.birthYear, label: t('Anno di nascita'), onChange: (v) => { d.birthYear = v; } }) }),
+        field({ label: t('Sesso'), control: chipGroup({ options: SEXES.map((s) => ({ value: s.id, label: s.label })), value: d.sex, onChange: (v) => { d.sex = v || ''; } }) }),
         field({
-          label: 'A che età è iniziato il mal di testa?',
+          label: t('A che età è iniziato il mal di testa?'),
           control: stepper({
-            value: d.onsetAge, min: 0, max: 100, start: 15, unit: 'anni', label: 'età di esordio', onChange: (v) => { d.onsetAge = v; },
+            value: d.onsetAge, min: 0, max: 100, start: 15, format: (v) => t('{n, plural, one {# anno} other {# anni}}', { n: v }), label: t('età di esordio'), onChange: (v) => { d.onsetAge = v; },
           }),
         }),
       ),
       card(
-        cardTitle('Diagnosi ricevute'),
+        cardTitle(t('Diagnosi ricevute')),
         field({
-          label: 'Cosa ti hanno diagnosticato?',
-          control: multiWithCustom({ base: DIAGNOSES, selected: d.diagnoses, onChange: (v) => { d.diagnoses = v; }, placeholder: 'es. Nevralgia occipitale' }),
-          hint: 'Scegli solo le diagnosi fatte da un medico. Se non hai una diagnosi, lascia vuoto.',
+          label: t('Cosa ti hanno diagnosticato?'),
+          control: multiWithCustom({ base: DIAGNOSES, selected: d.diagnoses, onChange: (v) => { d.diagnoses = v; }, placeholder: t('es. Nevralgia occipitale') }),
+          hint: t('Scegli solo le diagnosi fatte da un medico. Se non hai una diagnosi, lascia vuoto.'),
         }),
-        field({ label: 'Anno della diagnosi', control: yearSelect({ value: d.diagYear, label: 'Anno della diagnosi', onChange: (v) => { d.diagYear = v; } }) }),
+        field({ label: t('Anno della diagnosi'), control: yearSelect({ value: d.diagYear, label: t('Anno della diagnosi'), onChange: (v) => { d.diagYear = v; } }) }),
         field({
-          label: 'Fatta da',
+          label: t('Fatta da'),
           control: textInput({
-            value: d.diagBy, placeholder: 'es. Centro cefalee, Ospedale…', label: 'Diagnosi fatta da', onInput: (v) => { d.diagBy = v; },
+            value: d.diagBy, placeholder: t('es. Centro cefalee, Ospedale…'), label: t('Diagnosi fatta da'), onInput: (v) => { d.diagBy = v; },
           }),
         }),
       ),
@@ -126,28 +127,28 @@ function openProfileEditor() {
 }
 
 function openTypicalEditor() {
-  const t = clone(store.getDb().history.typical);
-  const draft = { ...t };
-  const auraTypesField = () => field({ label: 'Che tipo di aura', control: chipGroup({ options: AURA_TYPES, value: draft.auraTypes, multi: true, onChange: (v) => { draft.auraTypes = v; } }) });
+  const typical = clone(store.getDb().history.typical);
+  const draft = { ...typical };
+  const auraTypesField = () => field({ label: t('Che tipo di aura'), control: chipGroup({ options: AURA_TYPES, value: draft.auraTypes, multi: true, onChange: (v) => { draft.auraTypes = v; } }) });
   const auraBox = h('div');
   const paintAura = () => replaceChildren(auraBox, draft.aura && draft.aura !== 'never' ? auraTypesField() : null);
   paintAura();
   return editPage({
-    title: 'Il mio mal di testa',
+    title: t('Il mio mal di testa'),
     draft,
     build: (d) => [
-      h('p', { class: 'page-intro' }, 'Descrivi l’attacco tipico, quello che ti capita più spesso.'),
-      card(cardTitle('Intensità abituale'), intensityPicker({ value: d.intensity, onChange: (v) => { d.intensity = v; } })),
+      h('p', { class: 'page-intro' }, t('Descrivi l’attacco tipico, quello che ti capita più spesso.')),
+      card(cardTitle(t('Intensità abituale')), intensityPicker({ value: d.intensity, onChange: (v) => { d.intensity = v; } })),
       card(
-        field({ label: 'Quanto dura di solito (senza farmaci o se non funzionano)', control: chipGroup({ options: TYPICAL_DURATIONS.map((x) => ({ value: x.id, label: x.label })), value: d.duration, onChange: (v) => { d.duration = v || ''; } }) }),
-        field({ label: 'Lato', control: chipGroup({ options: SIDES.map((s) => ({ value: s.id, label: s.label })), value: d.side, onChange: (v) => { d.side = v || ''; } }) }),
-        field({ label: 'Zona', control: chipGroup({ options: PAIN_AREAS, value: d.areas, multi: true, onChange: (v) => { d.areas = v; } }) }),
-        field({ label: 'Che tipo di dolore', control: chipGroup({ options: PAIN_QUALITY, value: d.quality, multi: true, onChange: (v) => { d.quality = v; } }) }),
-        field({ label: 'Peggiora con il movimento (scale, piegarsi, camminare)?', control: chipGroup({ options: YES_NO_UNKNOWN.map((x) => ({ value: x.id, label: x.label })), value: d.activity, onChange: (v) => { d.activity = v || ''; } }) }),
+        field({ label: t('Quanto dura di solito (senza farmaci o se non funzionano)'), control: chipGroup({ options: TYPICAL_DURATIONS.map((x) => ({ value: x.id, label: x.label })), value: d.duration, onChange: (v) => { d.duration = v || ''; } }) }),
+        field({ label: t('Lato'), control: chipGroup({ options: SIDES.map((s) => ({ value: s.id, label: s.label })), value: d.side, onChange: (v) => { d.side = v || ''; } }) }),
+        field({ label: t('Zona'), control: chipGroup({ options: PAIN_AREAS, value: d.areas, multi: true, onChange: (v) => { d.areas = v; } }) }),
+        field({ label: t('Che tipo di dolore'), control: chipGroup({ options: PAIN_QUALITY, value: d.quality, multi: true, onChange: (v) => { d.quality = v; } }) }),
+        field({ label: t('Peggiora con il movimento (scale, piegarsi, camminare)?'), control: chipGroup({ options: YES_NO_UNKNOWN.map((x) => ({ value: x.id, label: x.label })), value: d.activity, onChange: (v) => { d.activity = v || ''; } }) }),
       ),
       card(
         field({
-          label: 'Aura (disturbi visivi o sensitivi prima del dolore)',
+          label: t('Aura (disturbi visivi o sensitivi prima del dolore)'),
           control: chipGroup({
             options: AURA_FREQ.map((x) => ({ value: x.id, label: x.label })),
             value: d.aura,
@@ -160,8 +161,8 @@ function openTypicalEditor() {
         auraBox,
       ),
       card(
-        field({ label: 'Sintomi che lo accompagnano', control: multiWithCustom({ base: store.listOptions('symptoms'), selected: d.symptoms, onChange: (v) => { d.symptoms = v; } }) }),
-        field({ label: 'Cosa lo scatena, secondo te', control: multiWithCustom({ base: store.listOptions('triggers'), selected: d.triggers, onChange: (v) => { d.triggers = v; } }) }),
+        field({ label: t('Sintomi che lo accompagnano'), control: multiWithCustom({ base: store.listOptions('symptoms'), selected: d.symptoms, onChange: (v) => { d.symptoms = v; } }) }),
+        field({ label: t('Cosa lo scatena, secondo te'), control: multiWithCustom({ base: store.listOptions('triggers'), selected: d.triggers, onChange: (v) => { d.triggers = v; } }) }),
       ),
     ],
     onSave: (d) => store.updateHistory({ typical: d }),
@@ -174,17 +175,17 @@ function openHealthEditor() {
     conditions: [...hs.conditions], conditionsNote: hs.conditionsNote, allergies: hs.allergies, otherMeds: hs.otherMeds, famKnown: hs.famKnown, family: [...hs.family], cycleLink: hs.cycleLink, contraception: hs.contraception,
   };
   const famBox = h('div');
-  const paintFam = () => replaceChildren(famBox, draft.famKnown === 'yes' ? field({ label: 'Chi?', control: chipGroup({ options: FAMILY_MEMBERS, value: draft.family, multi: true, onChange: (v) => { draft.family = v; } }) }) : null);
+  const paintFam = () => replaceChildren(famBox, draft.famKnown === 'yes' ? field({ label: t('Chi?'), control: chipGroup({ options: FAMILY_MEMBERS, value: draft.family, multi: true, onChange: (v) => { draft.family = v; } }) }) : null);
   paintFam();
   const showCycle = hs.sex !== 'm';
   return editPage({
-    title: 'Salute generale',
+    title: t('Salute generale'),
     draft,
     build: (d) => [
       card(
-        cardTitle('In famiglia'),
+        cardTitle(t('In famiglia')),
         field({
-          label: 'Qualcuno in famiglia soffre di emicrania o mal di testa?',
+          label: t('Qualcuno in famiglia soffre di emicrania o mal di testa?'),
           control: chipGroup({
             options: YES_NO_UNKNOWN.map((x) => ({ value: x.id, label: x.label })),
             value: d.famKnown,
@@ -198,36 +199,36 @@ function openHealthEditor() {
         famBox,
       ),
       card(
-        cardTitle('Altre condizioni'),
-        field({ label: 'Hai anche…', control: multiWithCustom({ base: CONDITIONS, selected: d.conditions, onChange: (v) => { d.conditions = v; } }) }),
+        cardTitle(t('Altre condizioni')),
+        field({ label: t('Hai anche…'), control: multiWithCustom({ base: CONDITIONS, selected: d.conditions, onChange: (v) => { d.conditions = v; } }) }),
         field({
-          label: 'Dettagli',
+          label: t('Dettagli'),
           control: textArea({
-            value: d.conditionsNote, placeholder: 'Interventi, problemi di salute importanti…', label: 'Dettagli sulle altre condizioni', maxLength: 1000, onInput: (v) => { d.conditionsNote = v; },
+            value: d.conditionsNote, placeholder: t('Interventi, problemi di salute importanti…'), label: t('Dettagli sulle altre condizioni'), maxLength: 1000, onInput: (v) => { d.conditionsNote = v; },
           }),
         }),
       ),
       card(
         field({
-          label: 'Allergie o intolleranze a farmaci',
+          label: t('Allergie o intolleranze a farmaci'),
           control: textArea({
-            value: d.allergies, rows: 2, placeholder: 'es. Allergia all’acido acetilsalicilico', label: 'Allergie', maxLength: 600, onInput: (v) => { d.allergies = v; },
+            value: d.allergies, rows: 2, placeholder: t('es. Allergia all’acido acetilsalicilico'), label: t('Allergie'), maxLength: 600, onInput: (v) => { d.allergies = v; },
           }),
         }),
         field({
-          label: 'Altri farmaci che prendi regolarmente',
+          label: t('Altri farmaci che prendi regolarmente'),
           control: textArea({
-            value: d.otherMeds, rows: 2, placeholder: 'es. Levotiroxina 50 mcg', label: 'Altri farmaci', maxLength: 600, onInput: (v) => { d.otherMeds = v; },
+            value: d.otherMeds, rows: 2, placeholder: t('es. Levotiroxina 50 mcg'), label: t('Altri farmaci'), maxLength: 600, onInput: (v) => { d.otherMeds = v; },
           }),
         }),
       ),
       showCycle ? card(
-        cardTitle('Ciclo e ormoni'),
-        field({ label: 'Gli attacchi sono legati al ciclo mestruale?', control: chipGroup({ options: CYCLE_LINK.map((x) => ({ value: x.id, label: x.label })), value: d.cycleLink, onChange: (v) => { d.cycleLink = v || ''; } }) }),
+        cardTitle(t('Ciclo e ormoni')),
+        field({ label: t('Gli attacchi sono legati al ciclo mestruale?'), control: chipGroup({ options: CYCLE_LINK.map((x) => ({ value: x.id, label: x.label })), value: d.cycleLink, onChange: (v) => { d.cycleLink = v || ''; } }) }),
         field({
-          label: 'Contraccezione o terapia ormonale',
+          label: t('Contraccezione o terapia ormonale'),
           control: textInput({
-            value: d.contraception, placeholder: 'es. Pillola estroprogestinica (lascia vuoto se nessuna)', label: 'Contraccezione ormonale', onInput: (v) => { d.contraception = v; },
+            value: d.contraception, placeholder: t('es. Pillola estroprogestinica (lascia vuoto se nessuna)'), label: t('Contraccezione ormonale'), onInput: (v) => { d.contraception = v; },
           }),
         }),
       ) : null,
@@ -237,12 +238,12 @@ function openHealthEditor() {
 }
 
 const PROMPTS = [
-  'Quando è iniziato e com’era all’inizio',
-  'Come sono cambiati gli attacchi negli anni (gravidanze, lavoro, periodi di stress…)',
-  'Gli attacchi più forti che ricordi',
-  'Cosa hai provato e cosa ha funzionato',
-  'Quanto incide sulla tua vita e cosa ti preoccupa',
-  'Cosa vorresti chiedere al medico',
+  t('Quando è iniziato e com’era all’inizio'),
+  t('Come sono cambiati gli attacchi negli anni (gravidanze, lavoro, periodi di stress…)'),
+  t('Gli attacchi più forti che ricordi'),
+  t('Cosa hai provato e cosa ha funzionato'),
+  t('Quanto incide sulla tua vita e cosa ti preoccupa'),
+  t('Cosa vorresti chiedere al medico'),
 ];
 
 function openNarrativeEditor() {
@@ -250,21 +251,21 @@ function openNarrativeEditor() {
   const count = h('p', { class: 'field-hint', style: { textAlign: 'right' } });
   const paint = () => {
     const words = draft.narrative.trim() ? draft.narrative.trim().split(/\s+/).length : 0;
-    count.textContent = `${plural(words, 'parola', 'parole')}`;
+    count.textContent = t('{n, plural, one {# parola} other {# parole}}', { n: words });
   };
   paint();
   return editPage({
-    title: 'Il mio racconto',
+    title: t('Il mio racconto'),
     draft,
     build: (d) => [
-      h('p', { class: 'page-intro' }, 'Racconta con parole tue la tua storia con il mal di testa, come faresti con il neurologo. Il testo viene riportato nella sintesi clinica e nel report.'),
+      h('p', { class: 'page-intro' }, t('Racconta con parole tue la tua storia con il mal di testa, come faresti con il neurologo. Il testo viene riportato nella sintesi clinica e nel report.')),
       card(
-        cardTitle('Puoi parlare di'),
-        h('ul', { class: 'bullets', style: { marginBottom: '0' } }, PROMPTS.map((t) => h('li', {}, t))),
+        cardTitle(t('Puoi parlare di')),
+        h('ul', { class: 'bullets', style: { marginBottom: '0' } }, PROMPTS.map((p) => h('li', {}, p))),
       ),
       card(
         textArea({
-          value: d.narrative, rows: 12, tall: true, maxLength: 12000, label: 'Il mio racconto', placeholder: 'Ho cominciato ad avere mal di testa a…', onInput: (v) => { d.narrative = v; paint(); },
+          value: d.narrative, rows: 12, tall: true, maxLength: 12000, label: t('Il mio racconto'), placeholder: t('Ho cominciato ad avere mal di testa a…'), onInput: (v) => { d.narrative = v; paint(); },
         }),
         count,
       ),
@@ -276,89 +277,89 @@ function openNarrativeEditor() {
 /* ---------- periodi di frequenza ---------- */
 
 function openPeriodSheet(existing = null, onDone = null) {
-  const sheet = openSheet({ title: existing ? 'Modifica periodo' : 'Nuovo periodo', tall: true });
+  const sheet = openSheet({ title: existing ? t('Modifica periodo') : t('Nuovo periodo'), tall: true });
   const cur = monthOf(todayStr());
   const d = existing ? clone(existing) : {
     from: `${YEAR() - 3}-01`, to: null, days: null, intensity: null, acute: null, note: '',
   };
   const toBox = h('div');
   const ongoing = toggleRow({
-    title: 'Fino a oggi',
-    subtitle: 'Il periodo continua ancora',
+    title: t('Fino a oggi'),
+    subtitle: t('Il periodo continua ancora'),
     checked: !d.to,
     onChange: (on) => {
       d.to = on ? null : (d.to || cur);
       paintTo();
     },
   });
-  const paintTo = () => replaceChildren(toBox, d.to ? field({ label: 'Fino a', control: monthInput({ value: d.to, label: 'Fine del periodo', onChange: (v) => { d.to = v || d.to; } }) }) : null);
+  const paintTo = () => replaceChildren(toBox, d.to ? field({ label: t('Fino a'), control: monthInput({ value: d.to, label: t('Fine del periodo'), onChange: (v) => { d.to = v || d.to; } }) }) : null);
   paintTo();
   replaceChildren(
     sheet.body,
-    h('p', { class: 'muted small mb' }, 'Una stima va benissimo: ad esempio «dal 2016 al 2019 circa 4 giorni al mese».'),
+    h('p', { class: 'muted small mb' }, t('Una stima va benissimo: ad esempio «dal 2016 al 2019 circa 4 giorni al mese».')),
     card(
-      field({ label: 'Dal', control: monthInput({ value: d.from, label: 'Inizio del periodo', onChange: (v) => { if (v) d.from = v; } }) }),
+      field({ label: t('Dal'), control: monthInput({ value: d.from, label: t('Inizio del periodo'), onChange: (v) => { if (v) d.from = v; } }) }),
       group(ongoing),
       toBox,
     ),
     card(
       field({
-        label: 'Giorni con mal di testa al mese (circa)',
+        label: t('Giorni con mal di testa al mese (circa)'),
         control: stepper({
-          value: d.days, min: 0, max: 31, step: 1, start: 4, label: 'giorni con mal di testa al mese', onChange: (v) => { d.days = v; },
+          value: d.days, min: 0, max: 31, step: 1, start: 4, label: t('giorni con mal di testa al mese'), onChange: (v) => { d.days = v; },
         }),
       }),
       field({
-        label: 'Intensità media (facoltativa)',
+        label: t('Intensità media (facoltativa)'),
         control: stepper({
-          value: d.intensity, min: 1, max: 10, step: 1, start: 6, label: 'intensità media', onChange: (v) => { d.intensity = v; },
+          value: d.intensity, min: 1, max: 10, step: 1, start: 6, label: t('intensità media'), onChange: (v) => { d.intensity = v; },
         }),
       }),
       field({
-        label: 'Giorni al mese con antidolorifici (facoltativo)',
+        label: t('Giorni al mese con antidolorifici (facoltativo)'),
         control: stepper({
-          value: d.acute, min: 0, max: 31, step: 1, start: 2, label: 'giorni al mese con antidolorifici', onChange: (v) => { d.acute = v; },
+          value: d.acute, min: 0, max: 31, step: 1, start: 2, label: t('giorni al mese con antidolorifici'), onChange: (v) => { d.acute = v; },
         }),
       }),
       field({
-        label: 'Note',
+        label: t('Note'),
         control: textInput({
-          value: d.note, placeholder: 'es. Periodo dell’università, molto stress', maxLength: 300, label: 'Note sul periodo', onInput: (v) => { d.note = v; },
+          value: d.note, placeholder: t('es. Periodo dell’università, molto stress'), maxLength: 300, label: t('Note sul periodo'), onInput: (v) => { d.note = v; },
         }),
       }),
     ),
     h('div', { class: 'today-actions' },
       button({
-        label: 'Salva periodo',
+        label: t('Salva periodo'),
         kind: 'primary',
         block: true,
         onClick: () => {
           if (d.days == null) {
-            toast('Indica quanti giorni al mese, anche a stima.', { tone: 'error' });
+            toast(t('Indica quanti giorni al mese, anche a stima.'), { tone: 'error' });
             return;
           }
           if (d.to && d.to < d.from) {
-            toast('La fine non può essere prima dell’inizio.', { tone: 'error' });
+            toast(t('La fine non può essere prima dell’inizio.'), { tone: 'error' });
             return;
           }
           if (d.from > cur) {
-            toast('Il periodo non può iniziare nel futuro.', { tone: 'error' });
+            toast(t('Il periodo non può iniziare nel futuro.'), { tone: 'error' });
             return;
           }
           store.upsertHistoryItem('periods', d);
           sheet.close();
-          toast('Periodo salvato');
+          toast(t('Periodo salvato'));
           if (onDone) onDone();
         },
       }),
       existing ? button({
-        label: 'Elimina periodo',
+        label: t('Elimina periodo'),
         kind: 'danger',
         block: true,
         onClick: () => {
           const removed = store.removeHistoryItem('periods', existing.id);
           sheet.close();
-          toast('Periodo eliminato', { action: { label: 'Annulla', onClick: () => store.upsertHistoryItem('periods', removed) } });
+          toast(t('Periodo eliminato'), { action: { label: t('Annulla§undo'), onClick: () => store.upsertHistoryItem('periods', removed) } });
           if (onDone) onDone();
         },
       }) : null),
@@ -367,22 +368,27 @@ function openPeriodSheet(existing = null, onDone = null) {
 }
 
 function openPeriods() {
-  const page = openPage({ title: 'Frequenza negli anni' });
+  const page = openPage({ title: t('Frequenza negli anni') });
   const render = () => {
     const hs = store.getDb().history;
     const rows = [...hs.periods].reverse().map((p) => row({
       icon: 'chart-line',
       tone: 'indigo',
       title: fmtMonthRange(p.from, p.to),
-      subtitle: [`circa ${num(p.days)} giorni al mese`, p.intensity != null ? `intensità ${num(p.intensity)}/10` : '', p.acute != null ? `antidolorifici ${num(p.acute)} gg/mese` : '', p.note].filter(Boolean).join(' · '),
+      subtitle: [
+        t('{n, plural, one {circa # giorno al mese} other {circa # giorni al mese}}', { n: p.days }),
+        p.intensity != null ? t('intensità {valore}/10', { valore: num(p.intensity) }) : '',
+        p.acute != null ? t('antidolorifici {giorni} gg/mese', { giorni: num(p.acute) }) : '',
+        p.note,
+      ].filter(Boolean).join(' · '),
       chevron: true,
       onClick: () => openPeriodSheet(p, render),
     }));
     replaceChildren(
       page.body,
-      h('p', { class: 'page-intro' }, 'Dividi la tua storia in periodi e indica, per ognuno, quanti giorni al mese avevi mal di testa. Così non devi ricompilare il diario del passato: queste stime vengono usate nel grafico dell’andamento e come punto di partenza per valutare le terapie.'),
-      rows.length ? group(...rows) : emptyState({ icon: 'chart-line', title: 'Nessun periodo', text: 'Inizia dal periodo più lontano che ricordi.' }),
-      group(row({ icon: 'plus', tone: 'green', title: 'Aggiungi un periodo', onClick: () => openPeriodSheet(null, render) })),
+      h('p', { class: 'page-intro' }, t('Dividi la tua storia in periodi e indica, per ognuno, quanti giorni al mese avevi mal di testa. Così non devi ricompilare il diario del passato: queste stime vengono usate nel grafico dell’andamento e come punto di partenza per valutare le terapie.')),
+      rows.length ? group(...rows) : emptyState({ icon: 'chart-line', title: t('Nessun periodo'), text: t('Inizia dal periodo più lontano che ricordi.') }),
+      group(row({ icon: 'plus', tone: 'green', title: t('Aggiungi un periodo'), onClick: () => openPeriodSheet(null, render) })),
     );
   };
   render();
@@ -394,7 +400,7 @@ function openPeriods() {
 /* ---------- episodi significativi ---------- */
 
 function openEventSheet(existing = null, onDone = null) {
-  const sheet = openSheet({ title: existing ? 'Modifica episodio' : 'Episodio significativo', tall: true });
+  const sheet = openSheet({ title: existing ? t('Modifica episodio') : t('Episodio significativo'), tall: true });
   const d = existing ? clone(existing) : {
     date: monthOf(todayStr()), title: '', text: '', intensity: null, er: false, hosp: false,
   };
@@ -403,14 +409,14 @@ function openEventSheet(existing = null, onDone = null) {
   const paintDate = () => {
     let ctl;
     if (precision === 'day') {
-      ctl = dateInput({ value: d.date.length === 10 ? d.date : `${d.date.slice(0, 7).padEnd(7, '-01').slice(0, 7)}-01`, max: todayStr(), label: 'Data', onChange: (v) => { if (v) d.date = v; } });
+      ctl = dateInput({ value: d.date.length === 10 ? d.date : `${d.date.slice(0, 7).padEnd(7, '-01').slice(0, 7)}-01`, max: todayStr(), label: t('Data'), onChange: (v) => { if (v) d.date = v; } });
       if (d.date.length !== 10) d.date = ctl.value || todayStr();
     } else if (precision === 'month') {
       if (d.date.length !== 7) d.date = d.date.length === 10 ? d.date.slice(0, 7) : `${d.date.slice(0, 4)}-01`;
-      ctl = monthInput({ value: d.date, label: 'Mese', onChange: (v) => { if (v) d.date = v; } });
+      ctl = monthInput({ value: d.date, label: t('Mese'), onChange: (v) => { if (v) d.date = v; } });
     } else {
       d.date = d.date.slice(0, 4);
-      ctl = yearSelect({ value: Number(d.date), label: 'Anno', empty: 'Anno', onChange: (v) => { if (v) d.date = String(v); } });
+      ctl = yearSelect({ value: Number(d.date), label: t('Anno'), empty: t('Anno'), onChange: (v) => { if (v) d.date = String(v); } });
     }
     replaceChildren(dateBox, ctl);
   };
@@ -419,9 +425,9 @@ function openEventSheet(existing = null, onDone = null) {
     sheet.body,
     card(
       field({
-        label: 'Quando',
+        label: t('Quando'),
         control: h('div', {}, chipGroup({
-          options: [{ value: 'day', label: 'Giorno preciso' }, { value: 'month', label: 'Mese' }, { value: 'year', label: 'Solo l’anno' }],
+          options: [{ value: 'day', label: t('Giorno preciso') }, { value: 'month', label: t('Mese') }, { value: 'year', label: t('Solo l’anno') }],
           value: precision,
           allowClear: false,
           onChange: (v) => {
@@ -431,52 +437,52 @@ function openEventSheet(existing = null, onDone = null) {
         }), h('div', { style: { marginTop: '10px' } }, dateBox)),
       }),
       field({
-        label: 'Titolo',
+        label: t('Titolo'),
         control: textInput({
-          value: d.title, placeholder: 'es. Attacco di 4 giorni, pronto soccorso', maxLength: 120, label: 'Titolo dell’episodio', onInput: (v) => { d.title = v; },
+          value: d.title, placeholder: t('es. Attacco di 4 giorni, pronto soccorso'), maxLength: 120, label: t('Titolo dell’episodio'), onInput: (v) => { d.title = v; },
         }),
       }),
       field({
-        label: 'Cosa è successo',
+        label: t('Cosa è successo'),
         control: textArea({
-          value: d.text, rows: 5, maxLength: 3000, label: 'Descrizione dell’episodio', placeholder: 'Sintomi, durata, cure ricevute, cosa ha detto il medico…', onInput: (v) => { d.text = v; },
+          value: d.text, rows: 5, maxLength: 3000, label: t('Descrizione dell’episodio'), placeholder: t('Sintomi, durata, cure ricevute, cosa ha detto il medico…'), onInput: (v) => { d.text = v; },
         }),
       }),
       field({
-        label: 'Intensità (facoltativa)',
+        label: t('Intensità (facoltativa)'),
         control: stepper({
-          value: d.intensity, min: 1, max: 10, start: 8, label: 'intensità', onChange: (v) => { d.intensity = v; },
+          value: d.intensity, min: 1, max: 10, start: 8, label: t('intensità'), onChange: (v) => { d.intensity = v; },
         }),
       }),
     ),
     group(
-      toggleRow({ icon: 'hospital', tone: 'red', title: 'Sono andato al pronto soccorso', checked: d.er, onChange: (v) => { d.er = v; } }),
-      toggleRow({ icon: 'hospital', tone: 'orange', title: 'Sono stato ricoverato', checked: d.hosp, onChange: (v) => { d.hosp = v; } }),
+      toggleRow({ icon: 'hospital', tone: 'red', title: t('Sono andato al pronto soccorso'), checked: d.er, onChange: (v) => { d.er = v; } }),
+      toggleRow({ icon: 'hospital', tone: 'orange', title: t('Sono stato ricoverato'), checked: d.hosp, onChange: (v) => { d.hosp = v; } }),
     ),
     h('div', { class: 'today-actions' },
       button({
-        label: 'Salva episodio',
+        label: t('Salva episodio'),
         kind: 'primary',
         block: true,
         onClick: () => {
           if (!d.title.trim() && !d.text.trim()) {
-            toast('Scrivi almeno un titolo.', { tone: 'error' });
+            toast(t('Scrivi almeno un titolo.'), { tone: 'error' });
             return;
           }
           store.upsertHistoryItem('events', d);
           sheet.close();
-          toast('Episodio salvato');
+          toast(t('Episodio salvato'));
           if (onDone) onDone();
         },
       }),
       existing ? button({
-        label: 'Elimina episodio',
+        label: t('Elimina episodio'),
         kind: 'danger',
         block: true,
         onClick: () => {
           const removed = store.removeHistoryItem('events', existing.id);
           sheet.close();
-          toast('Episodio eliminato', { action: { label: 'Annulla', onClick: () => store.upsertHistoryItem('events', removed) } });
+          toast(t('Episodio eliminato'), { action: { label: t('Annulla§undo'), onClick: () => store.upsertHistoryItem('events', removed) } });
           if (onDone) onDone();
         },
       }) : null),
@@ -485,21 +491,21 @@ function openEventSheet(existing = null, onDone = null) {
 }
 
 function openEvents() {
-  const page = openPage({ title: 'Episodi significativi' });
+  const page = openPage({ title: t('Episodi significativi') });
   const render = () => {
     const list = [...store.getDb().history.events].sort((a, b) => (a.date < b.date ? 1 : -1));
     replaceChildren(
       page.body,
-      h('p', { class: 'page-intro' }, 'Gli attacchi più importanti del passato: quelli più lunghi o più forti, gli accessi in pronto soccorso, i ricoveri, gli episodi diversi dal solito. Restano nella tua storia senza alterare le statistiche del diario.'),
+      h('p', { class: 'page-intro' }, t('Gli attacchi più importanti del passato: quelli più lunghi o più forti, gli accessi in pronto soccorso, i ricoveri, gli episodi diversi dal solito. Restano nella tua storia senza alterare le statistiche del diario.')),
       list.length ? group(...list.map((e) => row({
         icon: e.er || e.hosp ? 'hospital' : 'flag',
         tone: e.er || e.hosp ? 'red' : 'orange',
         title: e.title,
-        subtitle: [fmtFuzzyDate(e.date), e.intensity ? `intensità ${e.intensity}/10` : '', e.er ? 'pronto soccorso' : '', e.hosp ? 'ricovero' : ''].filter(Boolean).join(' · '),
+        subtitle: [fmtFuzzyDate(e.date), e.intensity ? t('intensità {valore}/10', { valore: e.intensity }) : '', e.er ? t('pronto soccorso') : '', e.hosp ? t('ricovero') : ''].filter(Boolean).join(' · '),
         chevron: true,
         onClick: () => openEventSheet(e, render),
-      }))) : emptyState({ icon: 'flag', title: 'Nessun episodio', text: 'Aggiungi gli attacchi che ricordi meglio, anche solo con l’anno.' }),
-      group(row({ icon: 'plus', tone: 'green', title: 'Aggiungi un episodio', onClick: () => openEventSheet(null, render) })),
+      }))) : emptyState({ icon: 'flag', title: t('Nessun episodio'), text: t('Aggiungi gli attacchi che ricordi meglio, anche solo con l’anno.') }),
+      group(row({ icon: 'plus', tone: 'green', title: t('Aggiungi un episodio'), onClick: () => openEventSheet(null, render) })),
     );
   };
   render();
@@ -511,47 +517,47 @@ function openEvents() {
 /* ---------- farmaci per l'attacco già provati ---------- */
 
 function openAcuteSheet(existing = null, onDone = null) {
-  const sheet = openSheet({ title: existing ? 'Modifica farmaco' : 'Farmaco provato', tall: true });
+  const sheet = openSheet({ title: existing ? t('Modifica farmaco') : t('Farmaco provato'), tall: true });
   const d = existing ? clone(existing) : {
     name: '', cls: 'other', effect: null, note: '',
   };
   const nameInput = textInput({
-    value: d.name, placeholder: 'Nome del farmaco', maxLength: 80, label: 'Nome del farmaco', onInput: (v) => { d.name = v; },
+    value: d.name ? tv(d.name) : '', placeholder: t('Nome del farmaco'), maxLength: 80, label: t('Nome del farmaco'), onInput: (v) => { d.name = v; },
   });
-  const clsSel = h('select', { class: 'input select', 'aria-label': 'Tipo di farmaco' }, MED_CLASSES.map((c) => h('option', { value: c.id }, c.label)));
+  const clsSel = h('select', { class: 'input select', 'aria-label': t('Tipo di farmaco') }, MED_CLASSES.map((c) => h('option', { value: c.id }, c.label)));
   clsSel.value = d.cls;
   clsSel.addEventListener('change', () => { d.cls = clsSel.value; });
   replaceChildren(
     sheet.body,
     card(
-      field({ label: 'Farmaco', control: nameInput }),
-      existing ? null : h('div', { class: 'chips', style: { margin: '-6px 0 16px' } }, DEFAULT_MEDS.slice(0, 14).map((m) => h('button', {
+      field({ label: t('Farmaco'), control: nameInput }),
+      existing ? null : h('div', { class: 'chips', style: { margin: '-6px 0 16px' } }, DEFAULT_MEDS.slice(0, 14).map((m) => h('button', { // i18n-ignore
         type: 'button',
         class: 'chip',
         onclick: () => {
           d.name = m.name;
-          nameInput.value = m.name;
+          nameInput.value = tv(m.name);
           d.cls = m.cls;
           clsSel.value = m.cls;
         },
-      }, m.name))),
-      field({ label: 'Tipo', control: clsSel }),
-      field({ label: 'Come funzionava', control: chipGroup({ options: MED_EFFECTS.map((e) => ({ value: e.v, label: e.label })), value: d.effect, onChange: (v) => { d.effect = v; } }) }),
+      }, tv(m.name)))),
+      field({ label: t('Tipo'), control: clsSel }),
+      field({ label: t('Come funzionava'), control: chipGroup({ options: MED_EFFECTS.map((e) => ({ value: e.v, label: e.label })), value: d.effect, onChange: (v) => { d.effect = v; } }) }),
       field({
-        label: 'Note',
+        label: t('Note'),
         control: textInput({
-          value: d.note, placeholder: 'es. Effetti collaterali, dose', maxLength: 200, label: 'Note sul farmaco', onInput: (v) => { d.note = v; },
+          value: d.note, placeholder: t('es. Effetti collaterali, dose'), maxLength: 200, label: t('Note sul farmaco'), onInput: (v) => { d.note = v; },
         }),
       }),
     ),
     h('div', { class: 'today-actions' },
       button({
-        label: 'Salva',
+        label: t('Salva'),
         kind: 'primary',
         block: true,
         onClick: () => {
           if (!d.name.trim()) {
-            toast('Scrivi il nome del farmaco.', { tone: 'error' });
+            toast(t('Scrivi il nome del farmaco.'), { tone: 'error' });
             return;
           }
           store.upsertHistoryItem('acute', d);
@@ -560,7 +566,7 @@ function openAcuteSheet(existing = null, onDone = null) {
         },
       }),
       existing ? button({
-        label: 'Elimina',
+        label: t('Elimina'),
         kind: 'danger',
         block: true,
         onClick: () => {
@@ -573,21 +579,21 @@ function openAcuteSheet(existing = null, onDone = null) {
 }
 
 function openAcute() {
-  const page = openPage({ title: 'Farmaci per l’attacco' });
+  const page = openPage({ title: t('Farmaci per l’attacco') });
   const render = () => {
     const list = store.getDb().history.acute;
     replaceChildren(
       page.body,
-      h('p', { class: 'page-intro' }, 'Antidolorifici, triptani e altri farmaci per l’attacco che hai provato in passato, con il risultato. Quelli che usi oggi li registri direttamente negli attacchi.'),
+      h('p', { class: 'page-intro' }, t('Antidolorifici, triptani e altri farmaci per l’attacco che hai provato in passato, con il risultato. Quelli che usi oggi li registri direttamente negli attacchi.')),
       list.length ? group(...list.map((a) => row({
         icon: 'pill',
         tone: 'green',
-        title: a.name,
-        subtitle: [medClassLabel(a.cls), a.effect != null ? `effetto: ${effectLabel(a.effect).toLowerCase()}` : '', a.note].filter(Boolean).join(' · '),
+        title: tv(a.name),
+        subtitle: [medClassLabel(a.cls), a.effect != null ? t('effetto: {effetto}', { effetto: effectLabel(a.effect).toLowerCase() }) : '', a.note].filter(Boolean).join(' · '),
         chevron: true,
         onClick: () => openAcuteSheet(a, render),
-      }))) : emptyState({ icon: 'pill', title: 'Nessun farmaco', text: 'Aggiungi i farmaci che hai già provato.' }),
-      group(row({ icon: 'plus', tone: 'green', title: 'Aggiungi un farmaco', onClick: () => openAcuteSheet(null, render) })),
+      }))) : emptyState({ icon: 'pill', title: t('Nessun farmaco'), text: t('Aggiungi i farmaci che hai già provato.') }),
+      group(row({ icon: 'plus', tone: 'green', title: t('Aggiungi un farmaco'), onClick: () => openAcuteSheet(null, render) })),
     );
   };
   render();
@@ -599,17 +605,17 @@ function openAcute() {
 /* ---------- sintesi clinica ---------- */
 
 export function openClinicalSummary() {
-  const page = openPage({ title: 'Sintesi clinica' });
+  const page = openPage({ title: t('Sintesi clinica') });
   const render = () => {
     const db = store.getDb();
     const today = todayStr();
     const idx = getIndex(db, store.getRev(), today);
     const sum = clinicalSummary(idx, db, today);
     const nodes = [];
-    nodes.push(h('p', { class: 'page-intro' }, 'Un riassunto in stile anamnesi costruito con la tua storia e con il diario, da leggere o mostrare al neurologo.'));
+    nodes.push(h('p', { class: 'page-intro' }, t('Un riassunto in stile anamnesi costruito con la tua storia e con il diario, da leggere o mostrare al neurologo.')));
     if (sum.observations.length) {
       nodes.push(card(
-        cardTitle('Cosa emerge'),
+        cardTitle(t('Cosa emerge')),
         ...sum.observations.map((o) => h('div', { class: 'insight' }, h('span', { class: `row-icon ${o.tone === 'good' ? 'green' : o.tone === 'warn' ? 'orange' : 'blue'}` }, icon(o.icon, 16)), h('p', {}, o.text))),
       ));
     }
@@ -617,22 +623,22 @@ export function openClinicalSummary() {
       nodes.push(card(...sum.blocks.map((b) => h('div', { class: 'summary-block' }, h('h4', {}, b.title), h('p', {}, b.text)))));
     } else {
       nodes.push(emptyState({
-        icon: 'book', title: 'Ancora nessun dato', text: 'Compila «La mia storia» o registra qualche attacco: la sintesi si costruisce da sola.', action: button({ label: 'Compila la mia storia', onClick: () => { page.close(); openHistory(); } }),
+        icon: 'book', title: t('Ancora nessun dato'), text: t('Compila «La mia storia» o registra qualche attacco: la sintesi si costruisce da sola.'), action: button({ label: t('Compila la mia storia'), onClick: () => { page.close(); openHistory(); } }),
       }));
     }
     nodes.push(h('div', { class: 'today-actions mb' },
       button({
-        label: 'Condividi il testo',
+        label: t('Condividi il testo'),
         kind: 'secondary',
         icon: 'share',
         block: true,
         onClick: async () => {
-          const r = await shareText({ text: summaryPlainText(sum, { name: db.settings.name, today }), title: 'Sintesi clinica' });
-          if (r === 'copied') toast('Sintesi copiata negli appunti');
+          const r = await shareText({ text: summaryPlainText(sum, { name: db.settings.name, today }), title: t('Sintesi clinica') });
+          if (r === 'copied') toast(t('Sintesi copiata negli appunti'));
         },
       }),
       button({
-        label: 'Crea il PDF per il medico',
+        label: t('Crea il PDF per il medico'),
         kind: 'primary',
         icon: 'file',
         block: true,
@@ -641,7 +647,7 @@ export function openClinicalSummary() {
           openReport();
         },
       })));
-    nodes.push(footnote('La sintesi è generata automaticamente con regole prudenti, solo con i dati che hai inserito. Non è una diagnosi e non sostituisce la visita.'));
+    nodes.push(footnote(t('La sintesi è generata automaticamente con regole prudenti, solo con i dati che hai inserito. Non è una diagnosi e non sostituisce la visita.')));
     replaceChildren(page.body, ...nodes);
   };
   render();
@@ -654,67 +660,67 @@ export function openClinicalSummary() {
 
 function summaryOf(id, db) {
   const hs = db.history;
-  const t = hs.typical;
+  const typical = hs.typical;
   switch (id) {
     case 'profile': {
       const bits = [];
-      if (hs.onsetAge != null) bits.push(`esordio a ${hs.onsetAge} anni`);
-      if (hs.diagnoses.length) bits.push(hs.diagnoses.join(', '));
-      return bits.join(' · ') || 'Età, esordio, diagnosi ricevute';
+      if (hs.onsetAge != null) bits.push(t('{eta, plural, one {esordio a # anno} other {esordio a # anni}}', { eta: hs.onsetAge }));
+      if (hs.diagnoses.length) bits.push(hs.diagnoses.map(tv).join(', '));
+      return bits.join(' · ') || t('Età, esordio, diagnosi ricevute');
     }
     case 'typical': {
       const bits = [];
-      if (t.intensity) bits.push(`intensità ${t.intensity}/10`);
-      if (t.quality.length) bits.push(t.quality.join(', ').toLowerCase());
-      if (t.symptoms.length) bits.push(plural(t.symptoms.length, 'sintomo', 'sintomi'));
-      return bits.join(' · ') || 'Come è di solito un attacco';
+      if (typical.intensity) bits.push(t('intensità {valore}/10', { valore: typical.intensity }));
+      if (typical.quality.length) bits.push(typical.quality.map(tv).join(', ').toLowerCase());
+      if (typical.symptoms.length) bits.push(t('{n, plural, one {# sintomo} other {# sintomi}}', { n: typical.symptoms.length }));
+      return bits.join(' · ') || t('Come è di solito un attacco');
     }
-    case 'periods': return hs.periods.length ? `${plural(hs.periods.length, 'periodo', 'periodi')} · ${fmtMonthRange(hs.periods[0].from, hs.periods[hs.periods.length - 1].to)}` : 'Quanti giorni al mese, negli anni';
-    case 'therapies': return db.preventives.length ? plural(db.preventives.length, 'terapia', 'terapie') : 'Terapie di prevenzione attuali e passate';
-    case 'acute': return hs.acute.length ? plural(hs.acute.length, 'farmaco', 'farmaci') : 'Antidolorifici e triptani già provati';
-    case 'events': return hs.events.length ? plural(hs.events.length, 'episodio', 'episodi') : 'Attacchi importanti, pronto soccorso';
-    case 'health': return [hs.famKnown === 'yes' ? 'familiarità' : '', hs.conditions.length ? plural(hs.conditions.length, 'condizione', 'condizioni') : '', hs.allergies ? 'allergie' : ''].filter(Boolean).join(' · ') || 'Familiarità, altre malattie, allergie, ormoni';
-    case 'narrative': return hs.narrative ? `${hs.narrative.slice(0, 60)}${hs.narrative.length > 60 ? '…' : ''}` : 'Con parole tue, come dal neurologo';
+    case 'periods': return hs.periods.length ? `${t('{n, plural, one {# periodo} other {# periodi}}', { n: hs.periods.length })} · ${fmtMonthRange(hs.periods[0].from, hs.periods[hs.periods.length - 1].to)}` : t('Quanti giorni al mese, negli anni');
+    case 'therapies': return db.preventives.length ? t('{n, plural, one {# terapia} other {# terapie}}', { n: db.preventives.length }) : t('Terapie di prevenzione attuali e passate');
+    case 'acute': return hs.acute.length ? t('{n, plural, one {# farmaco} other {# farmaci}}', { n: hs.acute.length }) : t('Antidolorifici e triptani già provati');
+    case 'events': return hs.events.length ? t('{n, plural, one {# episodio} other {# episodi}}', { n: hs.events.length }) : t('Attacchi importanti, pronto soccorso');
+    case 'health': return [hs.famKnown === 'yes' ? t('familiarità') : '', hs.conditions.length ? t('{n, plural, one {# condizione} other {# condizioni}}', { n: hs.conditions.length }) : '', hs.allergies ? t('allergie') : ''].filter(Boolean).join(' · ') || t('Familiarità, altre malattie, allergie, ormoni');
+    case 'narrative': return hs.narrative ? `${hs.narrative.slice(0, 60)}${hs.narrative.length > 60 ? '…' : ''}` : t('Con parole tue, come dal neurologo');
     default: return '';
   }
 }
 
 export function openHistory() {
-  const page = openPage({ title: 'La mia storia' });
+  const page = openPage({ title: t('La mia storia') });
   const render = () => {
     const top = page.body.scrollTop;
     const db = store.getDb();
     const done = new Map(historySections(db).map((s) => [s.id, s.done]));
     const comp = historyCompleteness(db);
     const item = (id, ic, tone, title, onClick) => row({
-      icon: ic, tone, title, subtitle: summaryOf(id, db), right: done.get(id) ? h('span', { style: { color: 'var(--green)' }, 'aria-label': 'compilata' }, icon('check-circle', 20)) : null, chevron: true, onClick,
+      icon: ic, tone, title, subtitle: summaryOf(id, db), right: done.get(id) ? h('span', { style: { color: 'var(--green)' }, 'aria-label': t('compilata') }, icon('check-circle', 20)) : null, chevron: true, onClick,
     });
     replaceChildren(
       page.body,
-      h('p', { class: 'page-intro' }, 'Racconta la tua situazione fino a oggi, come alla prima visita dal neurologo. Non serve ricompilare il diario del passato: queste informazioni entrano nelle analisi, nella sintesi clinica e nel report.'),
+      h('p', { class: 'page-intro' }, t('Racconta la tua situazione fino a oggi, come alla prima visita dal neurologo. Non serve ricompilare il diario del passato: queste informazioni entrano nelle analisi, nella sintesi clinica e nel report.')),
       card(
         h('div', { class: 'flex' },
           h('span', { class: 'progress-ring', style: { '--p': String(Math.round((comp.done / comp.total) * 100)) }, 'data-label': `${comp.done}/${comp.total}` }),
-          h('div', {}, h('div', { style: { fontWeight: '600' } }, comp.done === comp.total ? 'Storia completa' : 'Completa la tua storia'), h('div', { class: 'muted small' }, `${plural(comp.done, 'sezione compilata', 'sezioni compilate')} su ${comp.total}. Puoi compilarle in qualsiasi ordine.`))),
+          h('div', {}, h('div', { style: { fontWeight: '600' } }, comp.done === comp.total ? t('Storia completa') : t('Completa la tua storia')), h('div', { class: 'muted small' }, t('{n, plural, one {# sezione compilata su {totale}. Puoi compilarle in qualsiasi ordine.} other {# sezioni compilate su {totale}. Puoi compilarle in qualsiasi ordine.}}', { n: comp.done, totale: comp.total })))),
       ),
-      section('Il mio mal di testa', group(
-        item('profile', 'person', 'blue', 'Chi sono e diagnosi', openProfileEditor),
-        item('typical', 'activity', 'indigo', 'Com’è un attacco tipico', openTypicalEditor),
-        item('periods', 'chart-line', 'purple', 'Frequenza negli anni', () => openPeriods()),
-        item('events', 'flag', 'orange', 'Episodi significativi', () => openEvents()),
+      section(t('Il mio mal di testa'), group(
+        item('profile', 'person', 'blue', t('Chi sono e diagnosi'), openProfileEditor),
+        item('typical', 'activity', 'indigo', t('Com’è un attacco tipico'), openTypicalEditor),
+        item('periods', 'chart-line', 'purple', t('Frequenza negli anni'), () => openPeriods()),
+        item('events', 'flag', 'orange', t('Episodi significativi'), () => openEvents()),
       )),
-      section('Cure', group(
-        item('therapies', 'shield', 'green', 'Terapie di prevenzione', () => openTherapies()),
+      section(t('Cure'), group(
+        item('therapies', 'shield', 'green', t('Terapie di prevenzione'), () => openTherapies()),
         row({
-          icon: 'pill', tone: 'teal', title: 'Farmaci per l’attacco già provati', subtitle: summaryOf('acute', db), chevron: true, onClick: () => openAcute(),
+          icon: 'pill', tone: 'teal', title: t('Farmaci per l’attacco già provati'), subtitle: summaryOf('acute', db), chevron: true, onClick: () => openAcute(),
         }),
       )),
-      section('Il resto', group(
-        item('health', 'heart', 'pink', 'Salute generale', openHealthEditor),
-        item('narrative', 'edit', 'gray', 'Il mio racconto', openNarrativeEditor),
+      section(t('Il resto'), group(
+        item('health', 'heart', 'pink', t('Salute generale'), openHealthEditor),
+        item('narrative', 'edit', 'gray', t('Il mio racconto'), openNarrativeEditor),
       )),
-      button({ label: 'Leggi la sintesi clinica', kind: 'primary', icon: 'sparkles', block: true, onClick: () => openClinicalSummary() }),
-      h('div', { class: 'mt' }, footnote('Tutto resta su questo telefono. Nel report per il medico puoi scegliere se includere la storia.')),
+      button({ label: t('Leggi la sintesi clinica'), kind: 'primary', icon: 'sparkles', block: true, onClick: () => openClinicalSummary() }),
+      h('div', { class: 'mt' }, footnote(t('Tutto resta su questo telefono. Nel report per il medico puoi scegliere se includere la storia.'))),
     );
     page.body.scrollTop = top;
   };

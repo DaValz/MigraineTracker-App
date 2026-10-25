@@ -1,4 +1,4 @@
-const LOCALE = 'it-IT';
+import { locale as LOCALE, t } from './i18n.js';
 
 export const pad = (n) => String(n).padStart(2, '0');
 
@@ -109,9 +109,11 @@ export const fmtMonthShort = (m) => fmt(`${m}-01`, { month: 'short' }).replace('
 export const fmtTime = (v) => `${pad(asDate(v).getHours())}:${pad(asDate(v).getMinutes())}`;
 export const fmtDateTime = (v) => `${fmtDateMedium(v)}, ${fmtTime(v)}`;
 
-export const WEEKDAYS_SHORT = ['Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab', 'Dom'];
-export const WEEKDAYS_LETTER = ['L', 'M', 'M', 'G', 'V', 'S', 'D'];
-export const WEEKDAYS_LONG = ['lunedì', 'martedì', 'mercoledì', 'giovedì', 'venerdì', 'sabato', 'domenica'];
+const weekdayNames = (style) => Array.from({ length: 7 }, (_, i) => new Intl.DateTimeFormat(LOCALE, { weekday: style }).format(new Date(2024, 0, 1 + i)));
+// 1 gennaio 2024 e' un lunedi': le liste partono da lunedi'.
+export const WEEKDAYS_SHORT = weekdayNames('short').map((s) => capitalize(s.replace('.', '')));
+export const WEEKDAYS_LETTER = weekdayNames('narrow').map((s) => s.toUpperCase());
+export const WEEKDAYS_LONG = weekdayNames('long');
 
 export function formatDuration(min) {
   if (min == null || !Number.isFinite(min)) return '—';
@@ -119,16 +121,16 @@ export function formatDuration(min) {
   const d = Math.floor(total / 1440);
   const hh = Math.floor((total % 1440) / 60);
   const mm = total % 60;
-  if (d) return hh ? `${d} g ${hh} h` : `${d} g`;
-  if (hh) return mm ? `${hh} h ${mm} min` : `${hh} h`;
-  return `${mm} min`;
+  if (d) return hh ? t('{d} g {h} h', { d, h: hh }) : t('{d} g', { d });
+  if (hh) return mm ? t('{h} h {m} min', { h: hh, m: mm }) : t('{h} h', { h: hh });
+  return t('{m} min', { m: mm });
 }
 
 export function relativeDay(date, today = todayStr()) {
   const diff = diffDays(today, date);
-  if (diff === 0) return 'Oggi';
-  if (diff === -1) return 'Ieri';
-  if (diff === 1) return 'Domani';
+  if (diff === 0) return t('Oggi');
+  if (diff === -1) return t('Ieri');
+  if (diff === 1) return t('Domani');
   return capitalize(fmtDateMedium(date));
 }
 

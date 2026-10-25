@@ -2,6 +2,8 @@
  * Visualizzazione dei PDF con PDF.js (caricato solo quando serve).
  * Le pagine vengono disegnate su canvas e convertite in JPEG, così la memoria resta contenuta.
  */
+import { t } from './i18n.js';
+
 const BASE = new URL('../vendor/pdfjs/', import.meta.url);
 let libPromise = null;
 
@@ -51,7 +53,7 @@ export function closePdf(doc) {
 }
 
 const toJpeg = (canvas, quality) => new Promise((resolve, reject) => {
-  canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('Pagina non convertibile'))), 'image/jpeg', quality);
+  canvas.toBlob((b) => (b ? resolve(b) : reject(new Error(t('Pagina non convertibile')))), 'image/jpeg', quality);
 });
 
 /** Disegna la pagina `n` (da 1) alla larghezza indicata in pixel e la restituisce come JPEG. */

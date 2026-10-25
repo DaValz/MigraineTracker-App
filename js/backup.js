@@ -11,18 +11,20 @@ import {
 } from './files.js';
 import { docCategory } from './data.js';
 import { todayStr, parseDate } from './dates.js';
-import { bytes, plural } from './format.js';
+import { bytes } from './format.js';
+import { t } from './i18n.js';
 
 const BACKUP_JSON = 'diario-emicrania.json';
+const DOCS_DIR = 'documenti/';
 
 const README = [
-  'Backup del Diario Emicrania',
+  t('Backup del Diario Emicrania'),
   '',
-  'diario-emicrania.json: tutti i dati del diario (attacchi, giornate, terapie, storia clinica, contatti, visite).',
-  'documenti/: i file della cartella clinica, divisi per categoria.',
+  t('{file}: tutti i dati del diario (attacchi, giornate, terapie, storia clinica, contatti, visite).', { file: BACKUP_JSON }),
+  t('{cartella}: i file della cartella clinica, divisi per categoria.', { cartella: DOCS_DIR }),
   '',
-  'Per ripristinare: Diario Emicrania › Impostazioni › Dati e backup › Ripristina, e scegli questo file .zip.',
-  'Il file contiene dati sanitari: conservalo in un luogo sicuro.',
+  t('Per ripristinare: Diario Emicrania › Impostazioni › Dati e backup › Ripristina, e scegli questo file .zip.'),
+  t('Il file contiene dati sanitari: conservalo in un luogo sicuro.'),
   '',
 ].join('\r\n');
 
@@ -33,7 +35,7 @@ export function safePart(s, max = 60) {
     .trim()
     .slice(0, max)
     .replace(/[. ]+$/, '');
-  return clean || 'documento';
+  return clean || t('documento');
 }
 
 export function docsSize(db = store.getDb()) {
@@ -48,7 +50,7 @@ export async function buildFullBackup({ onProgress = null } = {}) {
   const used = new Set();
   const missing = [];
   for (const d of db.docs) {
-    const folder = `documenti/${safePart(docCategory(d.cat).label, 40)}/${d.date} ${safePart(d.title, 50)}`;
+    const folder = `${DOCS_DIR}${safePart(docCategory(d.cat).label, 40)}/${d.date} ${safePart(d.title, 50)}`;
     for (const f of d.files) {
       let blob = null;
       try {
@@ -71,37 +73,39 @@ export async function buildFullBackup({ onProgress = null } = {}) {
     }
   }
   const json = store.exportJson({ withDocs: true, filePaths: paths });
-  entries.unshift({ path: BACKUP_JSON, data: json }, { path: 'LEGGIMI.txt', data: README });
+  entries.unshift({ path: BACKUP_JSON, data: json }, { path: 'LEGGIMI.txt', data: README }); // i18n-ignore
   const blob = await createZip(entries, { onProgress });
   return { blob, files: paths.size, missing };
 }
 
 export async function exportJsonBackup() {
   const blob = new Blob([store.exportJson()], { type: 'application/json' });
-  const result = await shareFile({ blob, filename: `diario-emicrania-backup-${todayStr()}.json`, title: 'Backup Diario Emicrania' });
+  const filename = `diario-emicrania-backup-${todayStr()}.json`; // i18n-ignore
+  const result = await shareFile({ blob, filename, title: t('Backup Diario Emicrania') });
   if (result === 'shared' || result === 'downloaded') {
     store.markBackupDone();
-    toast(result === 'shared' ? 'Backup pronto: salvalo in File o iCloud Drive' : 'Backup scaricato');
+    toast(result === 'shared' ? t('Backup pronto: salvalo in File o iCloud Drive') : t('Backup scaricato'));
   }
   return result;
 }
 
 export async function exportZipBackup() {
-  toast('Preparo il backup con i documenti…', { duration: 15000 });
+  toast(t('Preparo il backup con i documenti…'), { duration: 15000 });
   let built;
   try {
     built = await buildFullBackup();
   } catch (e) {
-    toast(`Backup non riuscito: ${e.message || e}`, { tone: 'error', duration: 8000 });
+    toast(t('Backup non riuscito: {errore}', { errore: e.message || e }), { tone: 'error', duration: 8000 });
     return 'failed';
   }
-  const result = await shareFile({ blob: built.blob, filename: `diario-emicrania-backup-${todayStr()}.zip`, title: 'Backup Diario Emicrania' });
+  const filename = `diario-emicrania-backup-${todayStr()}.zip`; // i18n-ignore
+  const result = await shareFile({ blob: built.blob, filename, title: t('Backup Diario Emicrania') });
   if (result === 'shared' || result === 'downloaded') {
     store.markBackupDone();
-    const warn = built.missing.length ? ` (${plural(built.missing.length, 'file non trovato', 'file non trovati')})` : '';
-    toast(`${result === 'shared' ? 'Backup pronto: salvalo in File o iCloud Drive' : 'Backup scaricato'}${warn}`);
+    const warn = built.missing.length ? ` (${t('{n, plural, one {# file non trovato} other {# file non trovati}}', { n: built.missing.length })})` : '';
+    toast(`${result === 'shared' ? t('Backup pronto: salvalo in File o iCloud Drive') : t('Backup scaricato')}${warn}`);
   } else {
-    toast('Backup annullato');
+    toast(t('Backup annullato'));
   }
   return result;
 }
@@ -112,14 +116,14 @@ export async function exportBackup() {
   if (!db.docs.length || !filesSupported()) return exportJsonBackup();
   const size = docsSize(db);
   const choice = await openDialog({
-    title: 'Esporta backup',
-    message: `Hai ${plural(db.docs.length, 'documento', 'documenti')} nella cartella clinica (${bytes(size)}).`,
+    title: t('Esporta backup'),
+    message: t('{n, plural, one {Hai # documento nella cartella clinica ({dimensione}).} other {Hai # documenti nella cartella clinica ({dimensione}).}}', { n: db.docs.length, dimensione: bytes(size) }),
     dismissValue: null,
     stack: true,
     buttons: [
-      { label: `Completo, con i documenti (ZIP)`, value: 'zip', kind: 'primary' },
-      { label: 'Solo i dati del diario (JSON)', value: 'json' },
-      { label: 'Annulla', value: null },
+      { label: t('Completo, con i documenti (ZIP)'), value: 'zip', kind: 'primary' },
+      { label: t('Solo i dati del diario (JSON)'), value: 'json' },
+      { label: t('Annulla'), value: null },
     ],
   });
   if (choice === 'zip') return exportZipBackup();
@@ -138,8 +142,8 @@ export async function readBackupFile(file) {
   if (await isZipFile(file)) {
     const entries = await readZip(file);
     const jsonEntry = entries.find((e) => e.name === BACKUP_JSON) || entries.find((e) => !e.dir && /^[^/]+\.json$/i.test(e.name));
-    if (!jsonEntry) throw new Error('Nell’archivio non c’è un backup del Diario Emicrania.');
-    if (jsonEntry.size > 60 * 1024 * 1024) throw new Error('Il backup è troppo grande.');
+    if (!jsonEntry) throw new Error(t('Nell’archivio non c’è un backup del Diario Emicrania.'));
+    if (jsonEntry.size > 60 * 1024 * 1024) throw new Error(t('Il backup è troppo grande.'));
     const text = await readZipText(file, jsonEntry);
     const incoming = store.parseBackup(text);
     const withDocs = store.backupIncludesDocs(text);
@@ -150,7 +154,7 @@ export async function readBackupFile(file) {
       kind: 'zip', incoming, withDocs, file, paths, byName,
     };
   }
-  if (file.size > 40 * 1024 * 1024) throw new Error('Il file è troppo grande per essere un backup.');
+  if (file.size > 40 * 1024 * 1024) throw new Error(t('Il file è troppo grande per essere un backup.'));
   const incoming = store.parseBackup(await file.text());
   return { kind: 'json', incoming, withDocs: false };
 }

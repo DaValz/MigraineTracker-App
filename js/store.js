@@ -1,3 +1,4 @@
+import { t, tr, tv } from './i18n.js';
 import { nowStr, todayStr, parseDate, toDateStr } from './dates.js';
 import {
   defaultSettings, LIST_KINDS, DEFAULT_MEDS, CYCLE_TRIGGERS, MED_CLASSES, EPISODE_TYPES, SIDES, APPROX_DURATIONS, TX_VS,
@@ -20,6 +21,7 @@ const RE_MIME = /^[\w.+-]+\/[\w.+-]+$/;
 const RE_EMAIL = /^[^\s@<>"]+@[^\s@<>"]+\.[^\s@<>"]+$/;
 const idPattern = (prefix) => new RegExp(`^${prefix}[a-z0-9]{6,30}$`);
 const RE_ID = idPattern('e');
+const RE_IMP = idPattern('i');
 const RE_CID = idPattern('c');
 const RE_FID = idPattern('f');
 const setOf = (list, key = 'id') => new Set(list.map((x) => x[key]));
@@ -108,8 +110,8 @@ function sanitizeMedEntry(raw, fallbackAt) {
 }
 
 export function sanitizeTx(raw) {
-  const t = raw && typeof raw === 'object' ? raw : {};
-  return { vs: pick(t.vs, VS_IDS), missed: typeof t.missed === 'boolean' ? t.missed : null };
+  const src = raw && typeof raw === 'object' ? raw : {};
+  return { vs: pick(src.vs, VS_IDS), missed: typeof src.missed === 'boolean' ? src.missed : null };
 }
 
 export function sanitizeEpisode(raw) {
@@ -145,6 +147,7 @@ export function sanitizeEpisode(raw) {
     work: cleanNum(raw.work, 0, 2, { int: true, fallback: 0 }),
     tx: sanitizeTx(raw.tx),
     note: cleanNote(raw.note),
+    imp: typeof raw.imp === 'string' && RE_IMP.test(raw.imp) ? raw.imp : '',
     createdAt: isDateTime(raw.createdAt) ? raw.createdAt : now,
     updatedAt: isDateTime(raw.updatedAt) ? raw.updatedAt : now,
   };
@@ -179,7 +182,10 @@ export const isEmptyDay = (d) => !d || Object.keys(d).length === 0;
 
 export function guessTherapyClass(name) {
   const n = String(name || '').toLowerCase();
-  const hit = THERAPY_PRESETS.find((p) => n.startsWith(p.name.toLowerCase()) || (p.hint && p.hint.toLowerCase().split(/[ ,]+/).some((h) => h.length > 3 && n.includes(h))));
+  const brands = (p) => p.brands || p.hint;
+  // Si riconosce sia il nome salvato (italiano) sia quello tradotto nella lingua corrente (chi scrive "Topiramate" in inglese).
+  const hit = THERAPY_PRESETS.find((p) => [p.name, tv(p.name)].some((x) => n.startsWith(x.toLowerCase()))
+    || (brands(p) && brands(p).toLowerCase().split(/[ ,]+/).some((h) => h.length > 3 && n.includes(h))));
   return hit ? hit.cls : 'other';
 }
 
@@ -317,18 +323,18 @@ export function sanitizeHistory(raw) {
   out.diagBy = cleanStr(raw.diagBy, 120);
   out.famKnown = pick(raw.famKnown, YNU_IDS);
   out.family = out.famKnown === 'yes' ? cleanList(raw.family, 10, 40) : [];
-  const t = raw.typical && typeof raw.typical === 'object' ? raw.typical : {};
+  const typ = raw.typical && typeof raw.typical === 'object' ? raw.typical : {};
   out.typical = {
-    side: pick(t.side, SIDE_IDS),
-    quality: cleanList(t.quality),
-    areas: cleanList(t.areas),
-    intensity: cleanNum(t.intensity, 1, 10, { int: true }),
-    duration: pick(t.duration, TYPDUR_IDS),
-    aura: pick(t.aura, AURA_IDS),
-    auraTypes: cleanList(t.auraTypes),
-    symptoms: cleanList(t.symptoms),
-    triggers: cleanList(t.triggers),
-    activity: pick(t.activity, YNU_IDS),
+    side: pick(typ.side, SIDE_IDS),
+    quality: cleanList(typ.quality),
+    areas: cleanList(typ.areas),
+    intensity: cleanNum(typ.intensity, 1, 10, { int: true }),
+    duration: pick(typ.duration, TYPDUR_IDS),
+    aura: pick(typ.aura, AURA_IDS),
+    auraTypes: cleanList(typ.auraTypes),
+    symptoms: cleanList(typ.symptoms),
+    triggers: cleanList(typ.triggers),
+    activity: pick(typ.activity, YNU_IDS),
   };
   out.periods = sanitizeSubList(raw.periods, sanitizePeriod, 100).sort((a, b) => (a.from < b.from ? -1 : a.from > b.from ? 1 : 0));
   out.events = sanitizeSubList(raw.events, sanitizeEvent, 200);
@@ -404,7 +410,7 @@ export function sanitizeDoc(raw) {
   }
   return {
     id: uniqueId(raw.id, 'd'),
-    title: cleanStr(raw.title, 120) || 'Documento',
+    title: cleanStr(raw.title, 120) || tr('Documento'),
     date: raw.date,
     cat: pick(raw.cat, DOC_IDS, 'other'),
     contactId: RE_CID.test(raw.contactId) ? raw.contactId : '',
@@ -681,7 +687,7 @@ export function getAutoBackupInfo() {
 export function upsertEpisode(input) {
   const prev = input.id ? db.episodes[input.id] : null;
   const ep = sanitizeEpisode({ ...input, createdAt: prev ? prev.createdAt : nowStr(), updatedAt: nowStr() });
-  if (!ep) throw new Error('Attacco non valido');
+  if (!ep) throw new Error(t('Attacco non valido'));
   db.episodes[ep.id] = ep;
   for (const d of episodeDates(ep, todayStr())) {
     if (db.days[d] && db.days[d].free) {
@@ -705,6 +711,95 @@ export function restoreEpisode(ep) {
   if (!ep) return;
   db.episodes[ep.id] = ep;
   changed();
+}
+
+/* ---------- importazione dalle note ---------- */
+
+/** Copia dei dati attuali: permette di annullare un'importazione appena fatta. */
+export const snapshotDb = () => JSON.stringify(db);
+
+export function restoreSnapshot(json) {
+  const candidate = sanitizeDb(JSON.parse(json));
+  if (!tryPersist(candidate)) throw new Error(NO_SPACE);
+  db = candidate;
+  changed();
+}
+
+function addCustomMedTo(settings, item) {
+  const name = cleanStr(item && item.name, 80);
+  if (!name) return settings;
+  const lower = name.toLowerCase();
+  const known = [...DEFAULT_MEDS, ...settings.custom.meds].find((m) => m.name.toLowerCase() === lower);
+  if (known) {
+    if (settings.hidden.meds.includes(known.name)) return sanitizeSettings({ ...settings, hidden: { ...settings.hidden, meds: settings.hidden.meds.filter((x) => x !== known.name) } });
+    return settings;
+  }
+  return sanitizeSettings({ ...settings, custom: { ...settings.custom, meds: [...settings.custom.meds, { name, cls: CLASS_IDS.has(item.cls) ? item.cls : 'other', hint: '' }] } });
+}
+
+/**
+ * Aggiunge in blocco gli attacchi letti da una nota, tutti o nessuno (se lo spazio non basta i dati restano intatti).
+ * Ogni attacco porta il codice `imp` dell'importazione, cosi' si puo' eliminare in seguito.
+ */
+export function addImportedEpisodes({
+  episodes, days = {}, events = [], customMeds = [], settings = null, imp = '',
+}) {
+  const next = JSON.parse(JSON.stringify(db));
+  const batch = RE_IMP.test(imp) ? imp : makeId('i');
+  const today = todayStr();
+  let added = 0;
+  for (const raw of episodes.slice(0, 5000)) {
+    const ep = sanitizeEpisode({ ...raw, id: undefined, imp: batch });
+    if (!ep) continue;
+    while (next.episodes[ep.id]) ep.id = newId();
+    next.episodes[ep.id] = ep;
+    for (const d of episodeDates(ep, today)) {
+      if (next.days[d] && next.days[d].free) {
+        delete next.days[d].free;
+        if (isEmptyDay(next.days[d])) delete next.days[d];
+      }
+    }
+    added += 1;
+  }
+  for (const [date, patch] of Object.entries(days)) {
+    if (!isDate(date)) continue;
+    const merged = sanitizeDay({ ...(next.days[date] || {}), ...patch });
+    if (!isEmptyDay(merged)) next.days[date] = merged;
+  }
+  if (events.length) {
+    next.history = sanitizeHistory({ ...next.history, events: [...next.history.events, ...events.map((e) => ({ ...e, id: undefined }))], updatedAt: nowStr() });
+  }
+  let nextSettings = next.settings;
+  customMeds.forEach((m) => { nextSettings = addCustomMedTo(nextSettings, m); });
+  if (settings) nextSettings = sanitizeSettings({ ...nextSettings, ...settings });
+  next.settings = nextSettings;
+  if (!tryPersist(next)) throw new Error(NO_SPACE);
+  db = next;
+  changed();
+  return { imp: batch, added };
+}
+
+/** Importazioni dalle note ancora presenti: [{ imp, count, from, to, at }], dalla piu' recente. */
+export function importBatches() {
+  const map = new Map();
+  Object.values(db.episodes).forEach((e) => {
+    if (!e.imp) return;
+    const cur = map.get(e.imp) || { imp: e.imp, count: 0, from: e.start.slice(0, 10), to: e.start.slice(0, 10), at: e.createdAt };
+    cur.count += 1;
+    if (e.start.slice(0, 10) < cur.from) cur.from = e.start.slice(0, 10);
+    if (e.start.slice(0, 10) > cur.to) cur.to = e.start.slice(0, 10);
+    if (e.createdAt < cur.at) cur.at = e.createdAt;
+    map.set(e.imp, cur);
+  });
+  return [...map.values()].sort((a, b) => (a.at < b.at ? 1 : a.at > b.at ? -1 : 0));
+}
+
+export function removeImportedBatch(imp) {
+  const ids = Object.values(db.episodes).filter((e) => e.imp === imp).map((e) => e.id);
+  if (!ids.length) return 0;
+  ids.forEach((id) => { delete db.episodes[id]; });
+  changed();
+  return ids.length;
 }
 
 export function patchDay(date, patch) {
@@ -731,13 +826,13 @@ export function setFree(date, flag) {
 
 export function upsertRecord(coll, input) {
   const spec = COLLECTIONS[coll];
-  if (!spec) throw new Error(`Raccolta sconosciuta: ${coll}`);
+  if (!spec) throw new Error(t('Raccolta sconosciuta: {nome}', { nome: coll }));
   const rec = spec.sanitize(input);
-  if (!rec) throw new Error('Dati non validi');
+  if (!rec) throw new Error(t('Dati non validi'));
   const list = db[coll];
   const i = list.findIndex((x) => x.id === rec.id);
   if (i >= 0) list[i] = rec;
-  else if (list.length >= spec.max) throw new Error('Hai raggiunto il numero massimo di elementi.');
+  else if (list.length >= spec.max) throw new Error(t('Hai raggiunto il numero massimo di elementi.'));
   else list.push(rec);
   changed();
   return rec;
@@ -758,7 +853,7 @@ export function upsertPreventive(input) {
   try {
     return upsertRecord('preventives', input);
   } catch (e) {
-    throw new Error('Terapia non valida');
+    throw new Error(t('Terapia non valida'));
   }
 }
 
@@ -790,7 +885,7 @@ const HISTORY_LISTS = { periods: sanitizePeriod, events: sanitizeEvent, acute: s
 export function upsertHistoryItem(kind, item) {
   const fn = HISTORY_LISTS[kind];
   const rec = fn ? fn(item) : null;
-  if (!rec) throw new Error('Dati non validi');
+  if (!rec) throw new Error(t('Dati non validi'));
   const list = [...db.history[kind]];
   const i = list.findIndex((x) => x.id === rec.id);
   if (i >= 0) list[i] = rec;
@@ -924,11 +1019,11 @@ export function parseBackup(text) {
   try {
     parsed = JSON.parse(text);
   } catch (e) {
-    throw new Error('Il file non è un backup valido (JSON non leggibile).');
+    throw new Error(t('Il file non è un backup valido (JSON non leggibile).'));
   }
   const payload = payloadOf(parsed);
   if (!payload || typeof payload !== 'object' || (!payload.episodes && !payload.days)) {
-    throw new Error('Il file non sembra un backup del Diario Emicrania.');
+    throw new Error(t('Il file non sembra un backup del Diario Emicrania.'));
   }
   return sanitizeDb(payload);
 }
@@ -972,7 +1067,7 @@ function tryPersist(candidate) {
   }
 }
 
-const NO_SPACE = 'Impossibile salvare: spazio esaurito o archivio non disponibile. I dati attuali sono rimasti intatti.';
+const NO_SPACE = t('Impossibile salvare: spazio esaurito o archivio non disponibile. I dati attuali sono rimasti intatti.');
 
 export function importReplace(incoming, { withDocs = false } = {}) {
   const settings = sanitizeSettings({ ...incoming.settings, pin: db.settings.pin, welcomeDone: true });

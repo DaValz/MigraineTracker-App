@@ -1,0 +1,272 @@
+[
+  {
+    "name": "Tagebuch mit Jahres- und Monatsüberschriften",
+    "lines": [
+      "Migräne-Tagebuch",
+      "2025",
+      "3.3. starke Migräne 8/10, links, Übelkeit und Lichtempfindlichkeit (Ibuprofen 600 ohne Wirkung)",
+      "4.3. gleich",
+      "5.3. leichter Schmerz an der Stirn",
+      "6.3.",
+      "12.-13.3. Schmerzen an den Schläfen und im Nacken, Periode bekommen",
+      "Anfang April",
+      "2.4. morgens, rechts, visuelle Aura, Sumatriptan genommen",
+      "(danach besser)",
+      "2024",
+      "03.01.2024 mit sehr starken Schmerzen hinter dem rechten Auge aufgewacht",
+      "4.1. leicht"
+    ],
+    "count": 8,
+    "order": "dmy",
+    "firstDate": "2024-01-03",
+    "lastDate": "2025-04-02",
+    "expect": [
+      { "date": "2025-03-03", "intensity": 8, "side": "sx", "symptoms": ["Nausea", "Sensibilità alla luce"], "meds": [{ "name": "Ibuprofene", "count": 1, "dose": "600 mg", "effect": 0 }] },
+      { "date": "2025-03-04", "intensity": 8, "side": "sx", "flags": { "ditto": true } },
+      { "date": "2025-03-05", "intensity": 2, "areas": ["Fronte"] },
+      { "date": "2025-03-06", "flags": { "noDetails": true } },
+      { "date": "2025-03-12", "endDate": "2025-03-13", "areasHas": ["Tempie", "Nuca"], "menses": true, "mensesToday": true },
+      { "date": "2025-04-02", "side": "dx", "aura": ["Visiva (luci, zig-zag, macchie)"], "type": "con_aura", "meds": [{ "name": "Sumatriptan" }] },
+      { "date": "2024-01-03", "intensity": 8, "side": "dx", "areas": ["Dietro un occhio"] },
+      { "date": "2024-01-04", "intensity": 2 }
+    ]
+  },
+  {
+    "name": "Monate als Überschriften und nur der Tag in den Zeilen",
+    "lines": [
+      "Juni 2024",
+      "26. starke Migräne, Ibuprofen",
+      "27. keine Schmerzen, alles gut",
+      "28. leicht",
+      "Juli",
+      "3. pochend links, Übelkeit",
+      "2 Ibuprofen wegen starker Schmerzen"
+    ],
+    "count": 4,
+    "expect": [
+      { "date": "2024-06-26", "intensity": 7, "meds": [{ "name": "Ibuprofene" }] },
+      { "date": "2024-06-27", "kind": "free" },
+      { "date": "2024-06-28", "intensity": 2 },
+      { "date": "2024-07-03", "side": "sx", "qualityHas": ["Pulsante"], "symptomsHas": ["Nausea"], "meds": [{ "name": "Ibuprofene", "count": 2 }] }
+    ]
+  },
+  {
+    "name": "ohne Jahr: aus der Reihenfolge und dem heutigen Datum abgeleitet",
+    "today": "2026-10-25",
+    "lines": ["12.10. stark", "14.10. Ibuprofen", "2.11. leicht", "5.1. stark", "23.10. erträglich"],
+    "count": 5,
+    "expect": [
+      { "date": "2025-10-12", "intensity": 7 },
+      { "date": "2025-10-14", "meds": [{ "name": "Ibuprofene" }] },
+      { "date": "2025-11-02", "intensity": 2 },
+      { "date": "2026-01-05", "intensity": 7 },
+      { "date": "2026-10-23", "intensity": 4 }
+    ]
+  },
+  {
+    "name": "Datumsformen",
+    "lines": [
+      "26.06.24 stark",
+      "- 27.6.2024 leicht",
+      "• 28.06.2024 Ibuprofen",
+      "1. 29. Juni 2024 pochend",
+      "Sonntag, 30. Juni 2024: links",
+      "2024-07-01 rechts",
+      "vom 3. bis 5. Juli 2024 Migräne über 3 Tage",
+      "7. Juli 2024 Übelkeit",
+      "9.-10.7.2024 stark",
+      "11.7.-12.7. leicht"
+    ],
+    "count": 10,
+    "expect": [
+      { "date": "2024-06-26", "intensity": 7 },
+      { "date": "2024-06-27", "intensity": 2 },
+      { "date": "2024-06-28", "meds": [{ "name": "Ibuprofene" }] },
+      { "date": "2024-06-29", "qualityHas": ["Pulsante"] },
+      { "date": "2024-06-30", "side": "sx" },
+      { "date": "2024-07-01", "side": "dx" },
+      { "date": "2024-07-03", "endDate": "2024-07-05" },
+      { "date": "2024-07-07", "symptomsHas": ["Nausea"] },
+      { "date": "2024-07-09", "endDate": "2024-07-10", "intensity": 7 },
+      { "date": "2024-07-11", "endDate": "2024-07-12", "intensity": 2 }
+    ]
+  },
+  {
+    "name": "Umlaute, ß, Jänner und Umschreibungen mit ae/oe/ue",
+    "lines": [
+      "Jänner 2025",
+      "3. Jänner: starke Kopfschmerzen, Schläfen links, Übelkeit",
+      "4.1. Schmerzen hinter dem linken Auge, geräuschempfindlich",
+      "15.1. Heißhunger, Schweißausbruch, Schwindel",
+      "Februar 2025",
+      "2.2. Spannungskopfschmerz, Nackenverspannung, nach dem Sport",
+      "10.2. Migraene mit Aura, Uebelkeit, Laerm"
+    ],
+    "count": 5,
+    "expect": [
+      { "date": "2025-01-03", "intensity": 7, "side": "sx", "areasHas": ["Tempie"], "symptomsHas": ["Nausea"] },
+      { "date": "2025-01-04", "areas": ["Dietro un occhio"], "side": "sx", "symptomsHas": ["Sensibilità ai rumori"] },
+      { "date": "2025-01-15", "symptoms": ["Fame / voglie", "Sudorazione", "Vertigini"] },
+      { "date": "2025-02-02", "type": "tensiva", "triggers": ["Tensione al collo / postura", "Sforzo fisico"] },
+      { "date": "2025-02-10", "type": "con_aura", "symptomsHas": ["Nausea"], "triggersHas": ["Rumori forti"] }
+    ]
+  },
+  {
+    "name": "Medikamente: Mengen, Dosen, Wirkung und Namen außerhalb des Katalogs",
+    "lines": [
+      "2025",
+      "1.2. 2 Ibuprofen und ein Triptan genommen",
+      "2.2. Stirn (Ibuprofen)x2 nicht gewirkt",
+      "3.2. Novalgin 575 hat gut geholfen",
+      "4.2. Imigran 100 ohne Wirkung, danach Ibuprofen",
+      "5.2. Nahm Zalexil 20 mg",
+      "6.2. Paracetamol, keine Wirkung",
+      "7.2. kalte Luft, schwerer Kopf",
+      "8.2. zwei Tabletten Ibuprofen und Thomapyrin",
+      "9.2. nahm ein Zalexil und eine Aspirin"
+    ],
+    "count": 9,
+    "expect": [
+      { "meds": [{ "name": "Ibuprofene", "count": 2 }, { "name": "Triptano", "count": 1 }] },
+      { "meds": [{ "name": "Ibuprofene", "count": 2, "effect": 0 }], "areas": ["Fronte"] },
+      { "meds": [{ "name": "Metamizolo", "dose": "575 mg", "effect": 2 }] },
+      { "meds": [{ "name": "Sumatriptan", "dose": "100 mg", "effect": 0 }, { "name": "Ibuprofene", "effect": null }] },
+      { "meds": [{ "name": "Zalexil", "dose": "20 mg" }] },
+      { "meds": [{ "name": "Paracetamolo", "effect": 0 }] },
+      { "meds": [], "triggersHas": ["Freddo"], "qualityHas": ["Pressante / a cerchio"] },
+      { "meds": [{ "name": "Ibuprofene", "count": 2 }, { "name": "Thomapyrin" }] },
+      { "meds": [{ "name": "Zalexil" }, { "name": "Acido acetilsalicilico" }] }
+    ]
+  },
+  {
+    "name": "Auslöser, Symptome, Verneinungen und Periode",
+    "lines": [
+      "2025",
+      "10.5. wenig geschlafen, Stress, Übelkeit und Erbrechen",
+      "11.5. keine Übelkeit, nach dem Kaffee",
+      "12.5. ohne Kaffee, Kopfschmerzen vom Nacken ausgehend",
+      "13.5. (morgen Periode) Stirn",
+      "14.5. erster Tag der Periode, stark",
+      "15.5. licht- und lärmempfindlich, Hitze"
+    ],
+    "count": 6,
+    "expect": [
+      { "triggers": ["Poco sonno", "Stress"], "symptoms": ["Nausea", "Vomito"] },
+      { "symptoms": [], "triggers": ["Caffeina"] },
+      { "triggers": ["Astinenza da caffeina"], "areasHas": ["Nuca"] },
+      { "menses": true, "mensesToday": false, "triggersHas": ["Ciclo mestruale"] },
+      { "menses": true, "mensesToday": true, "intensity": 7 },
+      { "symptoms": ["Sensibilità alla luce", "Sensibilità ai rumori"], "triggers": ["Caldo"] }
+    ]
+  },
+  {
+    "name": "Aura, Schmerzseite und Notaufnahme",
+    "lines": [
+      "2025",
+      "20.6. visuelle Aura rechts, Schmerz links, Triptan genommen",
+      "21.6. keine Schmerzen aber Sehstörungen und Kribbeln in der rechten Hand, in der Notaufnahme gewesen",
+      "22.6. ohne Aura, rechte Schläfe"
+    ],
+    "count": 3,
+    "expect": [
+      { "side": "sx", "aura": ["Visiva (luci, zig-zag, macchie)"], "type": "con_aura" },
+      { "intensity": 1, "side": "", "aura": ["Visiva (luci, zig-zag, macchie)", "Sensitiva (formicolii)"], "er": true },
+      { "side": "dx", "aura": [], "type": "senza_aura", "areas": ["Tempie"] }
+    ]
+  },
+  {
+    "name": "umgebrochene Zeilen, Listen und mehrere Daten in einer Zeile",
+    "lines": [
+      "2025",
+      "8.3. starke Migräne, den ganzen Tag",
+      "ging abends von selbst weg",
+      "",
+      "9.3. leicht; 10.3. stark; 11.3. nichts",
+      "Bewertung 7 mit Ibuprofen",
+      "Termin beim Neurologen am 15.3. um 10 Uhr",
+      "16.3. Kontrolle, MRT gebucht"
+    ],
+    "count": 5,
+    "expect": [
+      { "date": "2025-03-08", "intensity": 7, "approxDur": "12to24" },
+      { "date": "2025-03-09", "intensity": 2 },
+      { "date": "2025-03-10", "intensity": 7 },
+      { "date": "2025-03-11" },
+      { "date": "2025-03-16", "kind": "other" }
+    ]
+  },
+  {
+    "name": "Intensität in Zahlen und Worten",
+    "lines": [
+      "2025",
+      "1.6. Schmerz 7 von 10",
+      "2.6. eine 8 von 10 mit Übelkeit",
+      "3.6. Intensität 6",
+      "4.6. Schmerz 9, unerträglich",
+      "5.6. erträglicher Schmerz",
+      "6.6. sehr stark, der schlimmste meines Lebens",
+      "7.6. leicht, dann schlimmer geworden und sehr stark"
+    ],
+    "count": 7,
+    "expect": [
+      { "intensity": 7 },
+      { "intensity": 8, "symptomsHas": ["Nausea"] },
+      { "intensity": 6 },
+      { "intensity": 9 },
+      { "intensity": 4 },
+      { "intensity": 10 },
+      { "intensity": 8 }
+    ]
+  },
+  {
+    "name": "unmögliche und ungeordnete Daten",
+    "lines": ["2025", "31.4. stark", "29.2. leicht", "30.4. stark", "2.4. Ibuprofen"],
+    "count": 4,
+    "expect": [
+      { "date": null },
+      { "date": null },
+      { "date": "2025-04-30" },
+      { "date": "2025-04-02" }
+    ]
+  },
+  {
+    "name": "MRT am Zeilenanfang ist keine Datumsangabe (im Niederländischen ist mrt = März)",
+    "lines": [
+      "2025",
+      "14.7. starke Migräne",
+      "MRT 15.7.2024 Kopf, Befund unauffällig",
+      "MRT 15 Uhr",
+      "16.7. leicht",
+      "17.7. MRT Kopf"
+    ],
+    "count": 3,
+    "expect": [
+      { "date": "2025-07-14", "intensity": 7 },
+      { "date": "2025-07-16", "intensity": 2 },
+      { "date": "2025-07-17", "kind": "other" }
+    ]
+  },
+  {
+    "name": "reine Periodenzeilen, schmerzfreie Tage und Termine sind keine Attacken",
+    "lines": [
+      "2025",
+      "5.5. Periode",
+      "6.5. Beginn der Periode",
+      "7.5. morgen Periode",
+      "8.5. keine Schmerzen",
+      "9.5. alles gut",
+      "10.5. Termin beim Neurologen",
+      "11.5. Kopfschmerzen, Periode"
+    ],
+    "count": 7,
+    "expect": [
+      { "date": "2025-05-05", "kind": "menses", "mensesToday": true },
+      { "date": "2025-05-06", "kind": "menses", "mensesToday": true },
+      { "date": "2025-05-07", "kind": "other", "mensesToday": false },
+      { "date": "2025-05-08", "kind": "free" },
+      { "date": "2025-05-09", "kind": "free" },
+      { "date": "2025-05-10", "kind": "other" },
+      { "date": "2025-05-11", "kind": "attack", "mensesToday": true }
+    ]
+  }
+]

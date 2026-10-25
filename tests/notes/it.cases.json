@@ -1,0 +1,260 @@
+[
+  {
+    "name": "diario a righe con intestazioni di anno e di mese",
+    "lines": [
+      "Diario mal di testa",
+      "2023",
+      "Inizio diario marzo 2023",
+      "3.03 emicrania frontale forte 7/10 (ibuprofene)",
+      "4.03 ^^",
+      "5.03 parte sinistra, nausea e fotofobia (sumatriptan 50 non ha fatto effetto)",
+      "6.03",
+      "12/13.03 dolore tempie e nuca, ciclo",
+      "Primi di aprile",
+      "2.04 mattina presto, destra, aura visiva, preso triptano",
+      "(poi migliorato)",
+      "2024",
+      "03.01.2024 sveglia con dolore forte occhio dx",
+      "4.01 leggero"
+    ],
+    "count": 8,
+    "order": "dmy",
+    "firstDate": "2023-03-03",
+    "lastDate": "2024-01-04",
+    "expect": [
+      { "date": "2023-03-03", "intensity": 7, "areas": ["Fronte"], "meds": [{ "name": "Ibuprofene", "count": 1 }], "flags": { "noDetails": false } },
+      { "date": "2023-03-04", "intensity": 7, "areas": ["Fronte"], "meds": [{ "name": "Ibuprofene" }], "flags": { "ditto": true } },
+      { "date": "2023-03-05", "side": "sx", "symptoms": ["Nausea", "Sensibilità alla luce"], "meds": [{ "name": "Sumatriptan", "dose": "50 mg", "effect": 0 }] },
+      { "date": "2023-03-06", "flags": { "noDetails": true } },
+      { "date": "2023-03-12", "endDate": "2023-03-13", "areasHas": ["Tempie", "Nuca"], "menses": true, "mensesToday": true },
+      { "date": "2023-04-02", "side": "dx", "aura": ["Visiva (luci, zig-zag, macchie)"], "type": "con_aura", "meds": [{ "name": "Triptano" }] },
+      { "date": "2024-01-03", "intensity": 7, "side": "dx", "areas": ["Occhi"] },
+      { "date": "2024-01-04", "intensity": 2 }
+    ]
+  },
+  {
+    "name": "mesi come titoli e solo il giorno nelle righe",
+    "lines": [
+      "Giugno 2024",
+      "26 emicrania forte, oki",
+      "27 nessun dolore, tutto bene",
+      "28 leggera",
+      "Luglio",
+      "3 pulsante a sinistra, nausea",
+      "2 oki per un dolore forte"
+    ],
+    "count": 4,
+    "expect": [
+      { "date": "2024-06-26", "intensity": 7, "meds": [{ "name": "Ketoprofene" }] },
+      { "date": "2024-06-27", "kind": "free" },
+      { "date": "2024-06-28", "intensity": 2 },
+      { "date": "2024-07-03", "side": "sx", "qualityHas": ["Pulsante"], "symptomsHas": ["Nausea"], "meds": [{ "name": "Ketoprofene", "count": 2 }] }
+    ]
+  },
+  {
+    "name": "senza anno: si deduce dall'ordine e dalla data di oggi",
+    "today": "2026-10-25",
+    "lines": ["12.10 forte", "14.10 oki", "2.11 leggero", "5.01 forte", "23.10 sopportabile"],
+    "count": 5,
+    "expect": [
+      { "date": "2025-10-12" }, { "date": "2025-10-14" }, { "date": "2025-11-02" }, { "date": "2026-01-05" }, { "date": "2026-10-23" }
+    ]
+  },
+  {
+    "name": "date in forme diverse",
+    "lines": [
+      "26/06/24 forte",
+      "- 27.06.2024 leggero",
+      "• 28-6-2024 oki",
+      "1. 29 giugno 2024 pulsante",
+      "Sabato 30 giugno 2024: sinistra",
+      "2024-07-01 destra",
+      "dal 3 al 5 luglio 2024 emicrania per 3 giorni",
+      "7 lug 2024 nausea"
+    ],
+    "count": 8,
+    "expect": [
+      { "date": "2024-06-26", "intensity": 7 },
+      { "date": "2024-06-27", "intensity": 2 },
+      { "date": "2024-06-28", "meds": [{ "name": "Ketoprofene" }] },
+      { "date": "2024-06-29", "qualityHas": ["Pulsante"] },
+      { "date": "2024-06-30", "side": "sx" },
+      { "date": "2024-07-01", "side": "dx" },
+      { "date": "2024-07-03", "endDate": "2024-07-05" },
+      { "date": "2024-07-07", "symptomsHas": ["Nausea"] }
+    ]
+  },
+  {
+    "name": "farmaci: quantita', dosi, effetti e nomi non in catalogo",
+    "lines": [
+      "2025",
+      "1.02 preso 2 oki e un triptano",
+      "2.02 frontale (oki)x2 non passa",
+      "3.02 Brufen 600 ha funzionato",
+      "4.02 imigran 100 zero effetto, poi preso oki",
+      "5.02 preso Zalexil 20 mg",
+      "6.02 tachipirina, nessun effetto",
+      "7.02 preso freddo, testa pesante"
+    ],
+    "count": 7,
+    "expect": [
+      { "meds": [{ "name": "Ketoprofene", "count": 2 }, { "name": "Triptano", "count": 1 }] },
+      { "meds": [{ "name": "Ketoprofene", "count": 2, "effect": 0 }] },
+      { "meds": [{ "name": "Ibuprofene", "dose": "600 mg", "effect": 2 }] },
+      { "meds": [{ "name": "Sumatriptan", "dose": "100 mg", "effect": 0 }, { "name": "Ketoprofene", "effect": null }] },
+      { "meds": [{ "name": "Zalexil", "dose": "20 mg" }] },
+      { "meds": [{ "name": "Paracetamolo", "effect": 0 }] },
+      { "meds": [] }
+    ]
+  },
+  {
+    "name": "fattori, sintomi, negazioni e ciclo",
+    "lines": [
+      "2025",
+      "10.05 dormito poco, stress, nausea e vomito",
+      "11.05 senza nausea, dopo il caffe",
+      "12.05 senza caffe, mal di testa dalla nuca",
+      "13.05 (domani ciclo) frontale",
+      "14.05 primo giorno di ciclo, forte",
+      "15.05 sensibilita alla luce e ai rumori, caldo"
+    ],
+    "count": 6,
+    "expect": [
+      { "triggers": ["Poco sonno", "Stress"], "symptoms": ["Nausea", "Vomito"] },
+      { "symptoms": [], "triggers": ["Caffeina"] },
+      { "triggers": ["Astinenza da caffeina"], "areasHas": ["Nuca"] },
+      { "menses": true, "mensesToday": false, "triggersHas": ["Ciclo mestruale"] },
+      { "menses": true, "mensesToday": true, "intensity": 7 },
+      { "symptoms": ["Sensibilità alla luce", "Sensibilità ai rumori"], "triggers": ["Caldo"] }
+    ]
+  },
+  {
+    "name": "aura, lato del dolore e pronto soccorso",
+    "lines": [
+      "2025",
+      "20.06 aura visiva a destra, dolore a sinistra, preso triptano",
+      "21.06 niente mal di testa ma luci a zig-zag e formicolio alla mano destra, corsa al pronto soccorso",
+      "22.06 niente aura, tempia destra"
+    ],
+    "count": 3,
+    "expect": [
+      { "side": "sx", "aura": ["Visiva (luci, zig-zag, macchie)"], "type": "con_aura" },
+      { "intensity": 1, "side": "", "aura": ["Visiva (luci, zig-zag, macchie)", "Sensitiva (formicolii)"], "triggers": [], "er": true },
+      { "side": "dx", "aura": [], "type": "senza_aura", "areas": ["Tempie"] }
+    ]
+  },
+  {
+    "name": "righe a capo, elenchi e righe con piu' date",
+    "lines": [
+      "2025",
+      "8.03 mal di testa forte che e' durato tutta la giornata",
+      "e' passato solo la sera",
+      "",
+      "9.03 leggero; 10.03 forte; 11.03 niente",
+      "7/10 con oki",
+      "visita neurologo 15.03 ore 10",
+      "16.03 controllo, risonanza prenotata"
+    ],
+    "expect": [
+      { "date": "2025-03-08", "intensity": 7 },
+      { "date": "2025-03-09", "intensity": 2 },
+      { "date": "2025-03-10", "intensity": 7 },
+      { "date": "2025-03-11" },
+      { "date": "2025-03-16", "kind": "other" }
+    ]
+  },
+  {
+    "name": "date impossibili e fuori ordine",
+    "lines": ["2025", "31.04 forte", "29.02 leggero", "30.04 forte", "2.04 oki"],
+    "count": 4,
+    "expect": [
+      { "date": null },
+      { "date": null },
+      { "date": "2025-04-30" },
+      { "date": "2025-04-02" }
+    ]
+  },
+  {
+    "name": "righe solo ciclo, giorni senza dolore e appuntamenti non sono attacchi",
+    "lines": [
+      "2025",
+      "5.05 ciclo",
+      "6.05 inizio mestruazioni",
+      "7.05 domani ciclo",
+      "8.05 nessun dolore",
+      "9.05 sto bene",
+      "10.05 visita dal neurologo",
+      "11.05 mal di testa, ciclo"
+    ],
+    "count": 7,
+    "expect": [
+      { "date": "2025-05-05", "kind": "menses", "mensesToday": true },
+      { "date": "2025-05-06", "kind": "menses" },
+      { "date": "2025-05-07", "kind": "other", "mensesToday": false },
+      { "date": "2025-05-08", "kind": "free" },
+      { "date": "2025-05-09", "kind": "free" },
+      { "date": "2025-05-10", "kind": "other" },
+      { "date": "2025-05-11", "kind": "attack", "mensesToday": true }
+    ]
+  },
+  {
+    "name": "voto su 10 dopo «dolore» e ritardi che non sono durate",
+    "lines": [
+      "2025",
+      "5.03 forte, dolore 9/10",
+      "6.03 dolore 7-8",
+      "7.03 leggero, dopo qualche ora molto forte",
+      "8.03 emicrania per qualche ora",
+      "9.03 dolore a 9/9.5, oki"
+    ],
+    "count": 5,
+    "expect": [
+      { "date": "2025-03-05", "intensity": 9 },
+      { "date": "2025-03-06", "intensity": 8 },
+      { "date": "2025-03-07", "intensity": 8, "approxDur": "" },
+      { "date": "2025-03-08", "approxDur": "lt4" },
+      { "date": "2025-03-09", "intensity": 9 }
+    ]
+  },
+  {
+    "name": "separatori e formati insoliti: due punti, trattino lungo, orari, colonne con tab",
+    "lines": [
+      "2025",
+      "12/03/2025: forte",
+      "13/03/2025 – leggera",
+      "14/03 ore 14:30 emicrania forte fino alle 18:00",
+      "15.03 niente",
+      "16.03\t8\tsinistra\toki",
+      "17.03 ok",
+      "- 18.03 nausea",
+      "• 19.03: 2 oki",
+      "20…03 leggero"
+    ],
+    "count": 9,
+    "expect": [
+      { "date": "2025-03-12", "intensity": 7 },
+      { "date": "2025-03-13", "intensity": 2 },
+      { "date": "2025-03-14", "intensity": 7 },
+      { "date": "2025-03-15", "kind": "free" },
+      { "date": "2025-03-16", "intensity": 8, "side": "sx", "meds": [{ "name": "Ketoprofene" }] },
+      { "date": "2025-03-17", "kind": "free" },
+      { "date": "2025-03-18", "symptoms": ["Nausea"] },
+      { "date": "2025-03-19", "meds": [{ "name": "Ketoprofene", "count": 2 }] },
+      { "date": "2025-03-20", "intensity": 2 }
+    ]
+  },
+  {
+    "name": "data in fondo alla riga",
+    "lines": [
+      "emicrania forte, oki (12/03/2025)",
+      "leggera - 13/03/2025",
+      "nausea 14.03.2025"
+    ],
+    "count": 3,
+    "expect": [
+      { "date": "2025-03-12", "intensity": 7, "meds": [{ "name": "Ketoprofene" }] },
+      { "date": "2025-03-13", "intensity": 2 },
+      { "date": "2025-03-14", "symptoms": ["Nausea"] }
+    ]
+  }
+]

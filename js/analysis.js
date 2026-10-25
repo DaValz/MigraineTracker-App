@@ -3,6 +3,8 @@ import {
   startOfWeek, weekdayMon, fmtMonthShort, fmtDayMonth, addMonths, daysInMonth, WEEKDAYS_LONG,
 } from './dates.js';
 import { medClassGroup, isAcuteClass, MED_CLASSES } from './data.js';
+import { t, tv, collate } from './i18n.js';
+import { num, pct } from './format.js';
 
 const MAX_COVER_DAYS = 30;
 export const dateOf = (dt) => dt.slice(0, 10);
@@ -192,7 +194,7 @@ export function countLabels(episodes, field) {
   const map = new Map();
   for (const e of episodes) for (const l of e[field]) map.set(l, (map.get(l) || 0) + 1);
   return [...map].map(([label, count]) => ({ label, count, pct: episodes.length ? count / episodes.length : 0 }))
-    .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label, 'it'));
+    .sort((a, b) => b.count - a.count || collate(tv(a.label), tv(b.label)));
 }
 
 export function countField(episodes, field, labelOf) {
@@ -213,10 +215,10 @@ export function weekdayCounts(episodes) {
 }
 
 export const PARTS_OF_DAY = [
-  { id: 'night', label: 'Notte', range: '00–06', from: 0, to: 6 },
-  { id: 'morning', label: 'Mattina', range: '06–12', from: 6, to: 12 },
-  { id: 'afternoon', label: 'Pomeriggio', range: '12–18', from: 12, to: 18 },
-  { id: 'evening', label: 'Sera', range: '18–24', from: 18, to: 24 },
+  { id: 'night', label: t('Notte'), range: '00–06', from: 0, to: 6 },
+  { id: 'morning', label: t('Mattina'), range: '06–12', from: 6, to: 12 },
+  { id: 'afternoon', label: t('Pomeriggio'), range: '12–18', from: 12, to: 18 },
+  { id: 'evening', label: t('Sera'), range: '18–24', from: 18, to: 24 },
 ];
 
 export function partOfDayCounts(episodes) {
@@ -252,7 +254,7 @@ export function medStats(episodes) {
   }
   return [...map.values()]
     .map((r) => ({ ...r, days: r.days.size, avgEffect: r.rated ? r.effectSum / r.rated : null }))
-    .sort((a, b) => b.uses - a.uses || a.name.localeCompare(b.name, 'it'));
+    .sort((a, b) => b.uses - a.uses || collate(tv(a.name), tv(b.name)));
 }
 
 export function mohStatus(idx, today) {
@@ -375,8 +377,15 @@ export function yearGrid(idx, db, endMonth, months = 12) {
   return rows;
 }
 
-const f1 = (n) => (Math.round(n * 10) / 10).toString().replace('.', ',');
-const pctText = (p) => `${Math.round(p * 100)}%`;
+const f1 = (n) => num(Math.round(n * 10) / 10);
+
+function partOfDayInsight(part) {
+  const when = { fascia: part.range };
+  if (part.id === 'night') return t('Più della metà degli attacchi inizia di notte ({fascia}).', when);
+  if (part.id === 'morning') return t('Più della metà degli attacchi inizia al mattino ({fascia}).', when);
+  if (part.id === 'afternoon') return t('Più della metà degli attacchi inizia nel pomeriggio ({fascia}).', when);
+  return t('Più della metà degli attacchi inizia la sera ({fascia}).', when);
+}
 
 export function buildInsights(idx, db, today) {
   const out = [];
@@ -386,71 +395,84 @@ export function buildInsights(idx, db, today) {
   const prev = rangeStats(idx, db, addDays(today, -59), addDays(today, -30));
   if (idx.trackingStart <= addDays(today, -59)) {
     const diff = cur.migraineDays - prev.migraineDays;
+    const days = { cur: cur.migraineDays, prev: prev.migraineDays };
     if (diff <= -3) {
-      out.push({ id: 'trend', tone: 'good', icon: 'trend-down', text: `Buone notizie: negli ultimi 30 giorni hai avuto ${cur.migraineDays} giorni di emicrania, contro i ${prev.migraineDays} dei 30 giorni precedenti.` });
+      out.push({ id: 'trend', tone: 'good', icon: 'trend-down', text: t('{cur, plural, one {Buone notizie: negli ultimi 30 giorni hai avuto # giorno di emicrania, contro i {prev} dei 30 giorni precedenti.} other {Buone notizie: negli ultimi 30 giorni hai avuto # giorni di emicrania, contro i {prev} dei 30 giorni precedenti.}}', days) });
     } else if (diff >= 3) {
-      out.push({ id: 'trend', tone: 'warn', icon: 'trend-up', text: `Negli ultimi 30 giorni hai avuto ${cur.migraineDays} giorni di emicrania, in aumento rispetto ai ${prev.migraineDays} dei 30 precedenti. Se la tendenza continua, parlane con il medico.` });
+      out.push({ id: 'trend', tone: 'warn', icon: 'trend-up', text: t('{cur, plural, one {Negli ultimi 30 giorni hai avuto # giorno di emicrania, in aumento rispetto ai {prev} dei 30 precedenti. Se la tendenza continua, parlane con il medico.} other {Negli ultimi 30 giorni hai avuto # giorni di emicrania, in aumento rispetto ai {prev} dei 30 precedenti. Se la tendenza continua, parlane con il medico.}}', days) });
     } else {
-      out.push({ id: 'trend', tone: 'info', icon: 'activity', text: `Frequenza stabile: ${cur.migraineDays} giorni di emicrania negli ultimi 30 giorni (${prev.migraineDays} nei 30 precedenti).` });
+      out.push({ id: 'trend', tone: 'info', icon: 'activity', text: t('{cur, plural, one {Frequenza stabile: # giorno di emicrania negli ultimi 30 giorni ({prev} nei 30 precedenti).} other {Frequenza stabile: # giorni di emicrania negli ultimi 30 giorni ({prev} nei 30 precedenti).}}', days) });
     }
   }
 
   const sinceDays = streakInfo(idx, today);
   if (sinceDays.daysSince != null && sinceDays.daysSince >= 7 && !sinceDays.ongoing) {
-    out.push({ id: 'streak', tone: 'good', icon: 'sun', text: `Sono ${sinceDays.daysSince} giorni dall'ultimo giorno di emicrania${sinceDays.longestFree > sinceDays.daysSince ? ` (il tuo record è ${sinceDays.longestFree})` : ': è il tuo record finora'}.` });
+    const streak = { n: sinceDays.daysSince, record: sinceDays.longestFree };
+    out.push({
+      id: 'streak',
+      tone: 'good',
+      icon: 'sun',
+      text: sinceDays.longestFree > sinceDays.daysSince
+        ? t("{n, plural, one {È # giorno dall'ultimo giorno di emicrania (il tuo record è {record}).} other {Sono # giorni dall'ultimo giorno di emicrania (il tuo record è {record}).}}", streak)
+        : t("{n, plural, one {È # giorno dall'ultimo giorno di emicrania: è il tuo record finora.} other {Sono # giorni dall'ultimo giorno di emicrania: è il tuo record finora.}}", streak),
+    });
   }
 
   const eps = idx.episodes;
   const trig = countLabels(eps, 'triggers');
   if (eps.length >= 4 && trig.length && trig[0].count >= 3 && trig[0].pct >= 0.3) {
-    out.push({ id: 'trigger', tone: 'info', icon: 'bolt', text: `Il fattore più segnalato è «${trig[0].label}»: presente in ${trig[0].count} attacchi su ${eps.length} (${pctText(trig[0].pct)}).` });
+    const top = {
+      count: trig[0].count, label: tv(trig[0].label), total: eps.length, perc: pct(trig[0].pct),
+    };
+    out.push({ id: 'trigger', tone: 'info', icon: 'bolt', text: t('{count, plural, one {Il fattore più segnalato è «{label}»: presente in # attacco su {total} ({perc}).} other {Il fattore più segnalato è «{label}»: presente in # attacchi su {total} ({perc}).}}', top) });
   }
 
   if (eps.length >= 8) {
     const wd = weekdayCounts(eps);
     const max = Math.max(...wd);
     if (max / eps.length >= 0.32) {
-      out.push({ id: 'weekday', tone: 'info', icon: 'calendar', text: `Gli attacchi iniziano più spesso di ${WEEKDAYS_LONG[wd.indexOf(max)]} (${max} su ${eps.length}).` });
+      out.push({ id: 'weekday', tone: 'info', icon: 'calendar', text: t('Gli attacchi iniziano più spesso di {giorno} ({n} su {totale}).', { giorno: WEEKDAYS_LONG[wd.indexOf(max)], n: max, totale: eps.length }) });
     }
     const pd = partOfDayCounts(eps);
     const pmax = Math.max(...pd);
     const known = pd.reduce((a, b) => a + b, 0);
     if (known >= 8 && pmax / known >= 0.5) {
       const part = PARTS_OF_DAY[pd.indexOf(pmax)];
-      out.push({ id: 'partofday', tone: 'info', icon: 'clock', text: `Più della metà degli attacchi inizia ${part.id === 'night' ? 'di notte' : part.id === 'morning' ? 'al mattino' : part.id === 'afternoon' ? 'nel pomeriggio' : 'la sera'} (${part.range}).` });
+      out.push({ id: 'partofday', tone: 'info', icon: 'clock', text: partOfDayInsight(part) });
     }
   }
 
   const start = addDays(today, -179);
   const sleep = compareByStatus(idx, db, start, today, sleepGetter(db));
   if (sleep.mig.n >= 5 && sleep.non.n >= 5 && Math.abs(sleep.mig.avg - sleep.non.avg) >= 0.75) {
-    out.push({ id: 'sleep', tone: 'info', icon: 'moon', text: `Sonno: nei giorni di emicrania hai registrato in media ${f1(sleep.mig.avg)} ore, negli altri giorni ${f1(sleep.non.avg)} ore.` });
+    out.push({ id: 'sleep', tone: 'info', icon: 'moon', text: t('Sonno: nei giorni di emicrania hai registrato in media {mig} ore, negli altri giorni {non} ore.', { mig: f1(sleep.mig.avg), non: f1(sleep.non.avg) }) });
   }
   const stress = compareByStatus(idx, db, start, today, stressGetter(db));
   if (stress.mig.n >= 5 && stress.non.n >= 5 && stress.mig.avg - stress.non.avg >= 0.6) {
-    out.push({ id: 'stress', tone: 'info', icon: 'bolt', text: `Stress: livello medio ${f1(stress.mig.avg)}/5 nei giorni di emicrania contro ${f1(stress.non.avg)}/5 negli altri giorni.` });
+    out.push({ id: 'stress', tone: 'info', icon: 'bolt', text: t('Stress: livello medio {mig}/5 nei giorni di emicrania contro {non}/5 negli altri giorni.', { mig: f1(stress.mig.avg), non: f1(stress.non.avg) }) });
   }
   const dp = compareByStatus(idx, db, start, today, pressureChangeGetter(db));
   if (dp.mig.n >= 8 && dp.non.n >= 8 && Math.abs(dp.mig.avg - dp.non.avg) >= 1.5) {
-    out.push({ id: 'pressure', tone: 'info', icon: 'cloud', text: `Meteo: nei giorni di emicrania la pressione è cambiata in media di ${f1(dp.mig.avg)} hPa rispetto al giorno prima, contro ${f1(dp.non.avg)} hPa negli altri giorni.` });
+    out.push({ id: 'pressure', tone: 'info', icon: 'cloud', text: t('Meteo: nei giorni di emicrania la pressione è cambiata in media di {mig} hPa rispetto al giorno prima, contro {non} hPa negli altri giorni.', { mig: f1(dp.mig.avg), non: f1(dp.non.avg) }) });
   }
 
   const meds = medStats(eps).filter((m) => m.rated >= 3 && isAcuteClass(m.cls));
   if (meds.length) {
     const best = [...meds].sort((a, b) => b.avgEffect - a.avgEffect)[0];
     if (best.avgEffect >= 1.5) {
-      out.push({ id: 'med', tone: 'good', icon: 'pill', text: `Il farmaco con il miglior risultato registrato è «${best.name}»: efficacia media ${f1(best.avgEffect)}/3 su ${best.rated} valutazioni.` });
+      const bestMed = { rated: best.rated, nome: tv(best.name), media: f1(best.avgEffect) };
+      out.push({ id: 'med', tone: 'good', icon: 'pill', text: t('{rated, plural, one {Il farmaco con il miglior risultato registrato è «{nome}»: efficacia media {media}/3 su # valutazione.} other {Il farmaco con il miglior risultato registrato è «{nome}»: efficacia media {media}/3 su # valutazioni.}}', bestMed) });
     }
   }
 
   const moh = mohStatus(idx, today);
   if (moh.level !== 'ok') {
-    out.push({ id: 'moh', tone: 'warn', icon: 'alert', text: `Hai assunto farmaci per il mal di testa in ${moh.any} degli ultimi 30 giorni. Un uso troppo frequente può peggiorare le cefalee: parlane con il medico.` });
+    out.push({ id: 'moh', tone: 'warn', icon: 'alert', text: t('Hai assunto farmaci per il mal di testa in {n} degli ultimi 30 giorni. Un uso troppo frequente può peggiorare le cefalee: parlane con il medico.', { n: moh.any }) });
   }
 
   const mens = db.settings.cycle ? menstrualLink(idx, db, addDays(today, -364), today) : null;
   if (mens && mens.attacks >= 5) {
-    out.push({ id: 'cycle', tone: 'info', icon: 'drop', text: `${pctText(mens.pct)} degli attacchi (${mens.near} su ${mens.attacks}) è avvenuto entro 2 giorni dalle mestruazioni.` });
+    out.push({ id: 'cycle', tone: 'info', icon: 'drop', text: t('{perc} degli attacchi ({n} su {totale}) è avvenuto entro 2 giorni dalle mestruazioni.', { perc: pct(mens.pct), n: mens.near, totale: mens.attacks }) });
   }
   return out;
 }

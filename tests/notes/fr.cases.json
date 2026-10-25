@@ -1,0 +1,251 @@
+[
+  {
+    "name": "journal avec en-têtes d'année et de mois",
+    "lines": [
+      "Journal de migraine",
+      "2025",
+      "3/03 migraine forte 8/10, côté gauche, nausées et photophobie (ibuprofène 600 sans effet)",
+      "4/03 pareil",
+      "5/03 douleur légère au front",
+      "6/03",
+      "12-13/03 douleur aux tempes et à la nuque, mes règles sont arrivées",
+      "Début avril",
+      "2/04 le matin, côté droit, aura visuelle, pris du sumatriptan",
+      "(ensuite ça s'est amélioré)",
+      "2024",
+      "03/01/2024 réveillée avec une douleur très forte à l'œil droit",
+      "4/01 léger"
+    ],
+    "count": 8,
+    "order": "dmy",
+    "firstDate": "2024-01-03",
+    "lastDate": "2025-04-02",
+    "expect": [
+      { "date": "2025-03-03", "intensity": 8, "side": "sx", "symptoms": ["Nausea", "Sensibilità alla luce"], "meds": [{ "name": "Ibuprofene", "count": 1, "dose": "600 mg", "effect": 0 }] },
+      { "date": "2025-03-04", "intensity": 8, "side": "sx", "flags": { "ditto": true } },
+      { "date": "2025-03-05", "intensity": 2, "areas": ["Fronte"] },
+      { "date": "2025-03-06", "flags": { "noDetails": true } },
+      { "date": "2025-03-12", "endDate": "2025-03-13", "areasHas": ["Tempie", "Nuca"], "menses": true, "mensesToday": true },
+      { "date": "2025-04-02", "side": "dx", "aura": ["Visiva (luci, zig-zag, macchie)"], "type": "con_aura", "meds": [{ "name": "Sumatriptan" }] },
+      { "date": "2024-01-03", "intensity": 8, "side": "dx", "areas": ["Occhi"] },
+      { "date": "2024-01-04", "intensity": 2 }
+    ]
+  },
+  {
+    "name": "mois comme titres et seulement le jour dans les lignes",
+    "lines": [
+      "Juin 2024",
+      "26 grosse migraine, ibuprofène",
+      "27 pas de douleur, tout va bien",
+      "28 léger",
+      "Juillet",
+      "3 pulsatile à gauche, nausées",
+      "2 ibuprofène pour une forte douleur"
+    ],
+    "count": 4,
+    "expect": [
+      { "date": "2024-06-26", "intensity": 7, "meds": [{ "name": "Ibuprofene" }] },
+      { "date": "2024-06-27", "kind": "free" },
+      { "date": "2024-06-28", "intensity": 2 },
+      { "date": "2024-07-03", "side": "sx", "qualityHas": ["Pulsante"], "symptomsHas": ["Nausea"], "meds": [{ "name": "Ibuprofene", "count": 2 }] }
+    ]
+  },
+  {
+    "name": "sans année : déduite de l'ordre et de la date du jour",
+    "today": "2026-10-25",
+    "lines": ["12/10 forte", "14/10 ibuprofène", "2/11 légère", "5/01 forte", "23/10 supportable"],
+    "count": 5,
+    "expect": [
+      { "date": "2025-10-12", "intensity": 7 },
+      { "date": "2025-10-14", "meds": [{ "name": "Ibuprofene" }] },
+      { "date": "2025-11-02", "intensity": 2 },
+      { "date": "2026-01-05", "intensity": 7 },
+      { "date": "2026-10-23", "intensity": 4 }
+    ]
+  },
+  {
+    "name": "dates sous des formes variées",
+    "lines": [
+      "26/06/24 forte",
+      "- 27.06.2024 légère",
+      "• 28-6-2024 ibuprofène",
+      "1. 29 juin 2024 pulsatile",
+      "Dimanche 30 juin 2024 : gauche",
+      "2024-07-01 droite",
+      "du 3 au 5 juillet 2024 migraine pendant 3 jours",
+      "7 juil. 2024 nausées"
+    ],
+    "count": 8,
+    "expect": [
+      { "date": "2024-06-26", "intensity": 7 },
+      { "date": "2024-06-27", "intensity": 2 },
+      { "date": "2024-06-28", "meds": [{ "name": "Ibuprofene" }] },
+      { "date": "2024-06-29", "qualityHas": ["Pulsante"] },
+      { "date": "2024-06-30", "side": "sx" },
+      { "date": "2024-07-01", "side": "dx" },
+      { "date": "2024-07-03", "endDate": "2024-07-05" },
+      { "date": "2024-07-07", "symptomsHas": ["Nausea"] }
+    ]
+  },
+  {
+    "name": "jours en lettres : 1er, mois abrégés avec point, jours de la semaine",
+    "lines": [
+      "Décembre 2024",
+      "1er forte migraine, côté gauche",
+      "2 idem",
+      "15 déc. douleur derrière l'œil droit, nausées",
+      "Janvier 2025",
+      "3 janv. légère",
+      "Mercredi 8 janvier : crise forte, pris Doliprane 1000, soulagement après 2 h"
+    ],
+    "count": 5,
+    "expect": [
+      { "date": "2024-12-01", "intensity": 7, "side": "sx" },
+      { "date": "2024-12-02", "intensity": 7, "side": "sx", "flags": { "ditto": true } },
+      { "date": "2024-12-15", "areas": ["Dietro un occhio"], "side": "dx", "symptomsHas": ["Nausea"] },
+      { "date": "2025-01-03", "intensity": 2 },
+      { "date": "2025-01-08", "intensity": 7, "meds": [{ "name": "Paracetamolo", "dose": "1000 mg", "effect": 2 }] }
+    ]
+  },
+  {
+    "name": "médicaments : quantités, doses, effets et noms hors catalogue",
+    "lines": [
+      "2025",
+      "1/02 pris 2 ibuprofène et un triptan",
+      "2/02 frontale (ibuprofène)x2 pas passée",
+      "3/02 Doliprane 1000 a bien marché",
+      "4/02 imigrane 100 sans effet, puis pris de l'ibuprofène",
+      "5/02 pris Zalexil 20 mg",
+      "6/02 paracétamol, aucun effet",
+      "7/02 attrapé froid, tête lourde",
+      "8/02 deux comprimés d'ibuprofène et du claradol",
+      "9/02 j'ai pris du Zalexil et un Kardegic"
+    ],
+    "count": 9,
+    "expect": [
+      { "meds": [{ "name": "Ibuprofene", "count": 2 }, { "name": "Triptano", "count": 1 }] },
+      { "meds": [{ "name": "Ibuprofene", "count": 2, "effect": 0 }] },
+      { "meds": [{ "name": "Paracetamolo", "dose": "1000 mg", "effect": 2 }] },
+      { "meds": [{ "name": "Sumatriptan", "dose": "100 mg", "effect": 0 }, { "name": "Ibuprofene", "effect": null }] },
+      { "meds": [{ "name": "Zalexil", "dose": "20 mg" }] },
+      { "meds": [{ "name": "Paracetamolo", "effect": 0 }] },
+      { "meds": [], "triggersHas": ["Freddo"], "qualityHas": ["Pressante / a cerchio"] },
+      { "meds": [{ "name": "Ibuprofene", "count": 2 }, { "name": "Paracetamolo" }] },
+      { "meds": [{ "name": "Zalexil" }, { "name": "Acido acetilsalicilico" }] }
+    ]
+  },
+  {
+    "name": "facteurs, symptômes, négations et règles",
+    "lines": [
+      "2025",
+      "10/05 peu dormi, stress, nausées et vomissements",
+      "11/05 pas de nausées, après le café",
+      "12/05 sans café, mal de tête qui part de la nuque",
+      "13/05 (demain mes règles) frontal",
+      "14/05 premier jour des règles, forte",
+      "15/05 sensibilité à la lumière et au bruit, chaleur"
+    ],
+    "count": 6,
+    "expect": [
+      { "triggers": ["Poco sonno", "Stress"], "symptoms": ["Nausea", "Vomito"] },
+      { "symptoms": [], "triggers": ["Caffeina"] },
+      { "triggers": ["Astinenza da caffeina"], "areasHas": ["Nuca"] },
+      { "menses": true, "mensesToday": false, "triggersHas": ["Ciclo mestruale"] },
+      { "menses": true, "mensesToday": true, "intensity": 7 },
+      { "symptoms": ["Sensibilità alla luce", "Sensibilità ai rumori"], "triggers": ["Caldo"] }
+    ]
+  },
+  {
+    "name": "aura, côté de la douleur et urgences",
+    "lines": [
+      "2025",
+      "20/06 aura visuelle à droite, douleur à gauche, pris un triptan",
+      "21/06 sans douleur mais troubles visuels et fourmillements à la main droite, allée aux urgences",
+      "22/06 sans aura, tempe droite"
+    ],
+    "count": 3,
+    "expect": [
+      { "side": "sx", "aura": ["Visiva (luci, zig-zag, macchie)"], "type": "con_aura" },
+      { "intensity": 1, "side": "", "aura": ["Visiva (luci, zig-zag, macchie)", "Sensitiva (formicolii)"], "er": true },
+      { "side": "dx", "aura": [], "type": "senza_aura", "areas": ["Tempie"] }
+    ]
+  },
+  {
+    "name": "lignes coupées, listes et plusieurs dates sur une ligne",
+    "lines": [
+      "2025",
+      "8/03 forte migraine qui a duré toute la journée",
+      "passée toute seule dans la soirée",
+      "",
+      "9/03 légère ; 10/03 forte ; 11/03 rien du tout",
+      "évaluation 7 avec ibuprofène",
+      "visite chez le neurologue le 15/03 à 10h",
+      "16/03 contrôle, IRM réservée"
+    ],
+    "count": 5,
+    "expect": [
+      { "date": "2025-03-08", "intensity": 7, "approxDur": "12to24" },
+      { "date": "2025-03-09", "intensity": 2 },
+      { "date": "2025-03-10", "intensity": 7 },
+      { "date": "2025-03-11" },
+      { "date": "2025-03-16", "kind": "other" }
+    ]
+  },
+  {
+    "name": "intensité en chiffres et en mots",
+    "lines": [
+      "2025",
+      "1/06 douleur 7 sur 10",
+      "2/06 un 8 sur 10 avec nausées",
+      "3/06 intensité 6",
+      "4/06 douleur de 9, insupportable",
+      "5/06 douleur supportable",
+      "6/06 très forte, la pire de ma vie",
+      "7/06 légère, puis elle a empiré et est devenue très forte"
+    ],
+    "count": 7,
+    "expect": [
+      { "intensity": 7 },
+      { "intensity": 8, "symptomsHas": ["Nausea"] },
+      { "intensity": 6 },
+      { "intensity": 9 },
+      { "intensity": 4 },
+      { "intensity": 10 },
+      { "intensity": 8 }
+    ]
+  },
+  {
+    "name": "dates impossibles et désordonnées",
+    "lines": ["2025", "31/04 forte", "29/02 légère", "30/04 forte", "2/04 ibuprofène"],
+    "count": 4,
+    "expect": [
+      { "date": null },
+      { "date": null },
+      { "date": "2025-04-30" },
+      { "date": "2025-04-02" }
+    ]
+  },
+  {
+    "name": "les lignes de règles seules, les jours sans douleur et les rendez-vous ne sont pas des crises",
+    "lines": [
+      "2025",
+      "5/05 règles",
+      "6/05 début des règles",
+      "7/05 demain règles",
+      "8/05 pas de douleur",
+      "9/05 je vais bien",
+      "10/05 rendez-vous chez le neurologue",
+      "11/05 mal de tête, règles"
+    ],
+    "count": 7,
+    "expect": [
+      { "date": "2025-05-05", "kind": "menses", "mensesToday": true },
+      { "date": "2025-05-06", "kind": "menses", "mensesToday": true },
+      { "date": "2025-05-07", "kind": "other", "mensesToday": false },
+      { "date": "2025-05-08", "kind": "free" },
+      { "date": "2025-05-09", "kind": "free" },
+      { "date": "2025-05-10", "kind": "other" },
+      { "date": "2025-05-11", "kind": "attack", "mensesToday": true }
+    ]
+  }
+]

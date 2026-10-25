@@ -12,7 +12,7 @@ import { getIndex } from '../analysis.js';
 import {
   clinicalSummary, historyCompleteness, nextDose, midasSeries, activeTherapies, isInjectable,
 } from '../clinical.js';
-import { plural } from '../format.js';
+import { t, tv } from '../i18n.js';
 import { openHistory, openClinicalSummary } from './history.js';
 import { openTherapies, openTherapyDetail } from './therapies.js';
 import { openDocuments } from './documents.js';
@@ -26,13 +26,16 @@ export function agendaItems(db, today = todayStr(), { visitDays = 30, doseDays =
   activeTherapies(db, today).filter(isInjectable).forEach((p) => {
     const nd = nextDose(p, today);
     if (!nd || nd.daysLeft > doseDays) return;
-    const what = p.cls === 'botox' ? 'seduta' : 'somministrazione';
+    let sub;
+    if (nd.status === 'overdue') sub = t('Prevista il {data}, in ritardo', { data: fmtDateShort(nd.next) });
+    else if (nd.daysLeft === 0) sub = t('Prevista oggi');
+    else sub = t('{n, plural, one {Tra # giorno} other {Tra # giorni}}', { n: nd.daysLeft });
     items.push({
       key: `d${p.id}`,
       date: nd.next < today ? today : nd.next,
       sortKey: `${nd.next}T00:00`,
-      title: `${p.name}: ${what}`,
-      sub: nd.status === 'overdue' ? `Prevista il ${fmtDateShort(nd.next)}, in ritardo` : (nd.daysLeft === 0 ? 'Prevista oggi' : `Tra ${plural(nd.daysLeft, 'giorno', 'giorni')}`),
+      title: p.cls === 'botox' ? t('{terapia}: seduta', { terapia: tv(p.name) }) : t('{terapia}: somministrazione', { terapia: tv(p.name) }),
+      sub,
       tone: nd.status === 'ok' ? '' : 'warn',
       therapy: p,
       due: nd.daysLeft <= 0,
@@ -46,14 +49,14 @@ export function agendaItems(db, today = todayStr(), { visitDays = 30, doseDays =
       date: v.at.slice(0, 10),
       sortKey: v.at,
       title: visitKindLabel(v.kind),
-      sub: [`ore ${fmtTime(v.at)}`, who].filter(Boolean).join(' · '),
+      sub: [t('ore {ora}', { ora: fmtTime(v.at) }), who].filter(Boolean).join(' · '),
       visit: v,
     });
   });
   return items.sort((a, b) => (a.sortKey < b.sortKey ? -1 : 1));
 }
 
-export function agendaCard(items, { title = 'In programma' } = {}) {
+export function agendaCard(items, { title = t('In programma') } = {}) {
   if (!items.length) return null;
   return card(
     cardTitle(title),
@@ -68,13 +71,13 @@ export function agendaCard(items, { title = 'In programma' } = {}) {
         onclick: () => (it.therapy ? openTherapyDetail(it.therapy.id) : openVisitEditor(it.visit)),
       }, h('strong', {}, it.title), h('span', { style: it.tone === 'warn' ? { color: 'var(--orange-text)' } : null }, it.sub)),
       it.due ? button({
-        label: 'Fatta',
+        label: t('Fatta'),
         kind: 'secondary',
         size: 'sm',
         icon: 'check',
         onClick: () => {
           store.addTherapyDose(it.therapy.id, todayStr());
-          toast('Somministrazione registrata');
+          toast(t('Somministrazione registrata'));
         },
       }) : null,
     )),
@@ -92,16 +95,16 @@ export function recordView() {
     nodes.push(card(
       h('div', { class: 'flex', style: { alignItems: 'flex-start', marginBottom: '12px' } },
         h('span', { class: 'row-icon indigo' }, icon('book', 18)),
-        h('div', {}, h('h3', { style: { fontSize: '1.1rem', fontWeight: '700' } }, 'Racconta la tua storia'), h('p', { class: 'muted small' }, 'Non serve compilare il diario del passato: descrivi la tua situazione come alla prima visita dal neurologo. L’app ne terrà conto nelle analisi e nel report.'))),
-      button({ label: 'Inizia', kind: 'primary', block: true, onClick: () => openHistory() }),
+        h('div', {}, h('h3', { style: { fontSize: '1.1rem', fontWeight: '700' } }, t('Racconta la tua storia')), h('p', { class: 'muted small' }, t('Non serve compilare il diario del passato: descrivi la tua situazione come alla prima visita dal neurologo. L’app ne terrà conto nelle analisi e nel report.')))),
+      button({ label: t('Inizia'), kind: 'primary', block: true, onClick: () => openHistory() }),
     ));
   } else {
     const sum = clinicalSummary(idx, db, today);
     const obs = sum.observations.slice(0, 3);
     nodes.push(card(
-      cardTitle('Sintesi clinica', h('button', { type: 'button', class: 'link', onclick: () => openClinicalSummary() }, 'Apri')),
-      ...(obs.length ? obs.map((o) => h('div', { class: 'insight' }, h('span', { class: `row-icon ${o.tone === 'good' ? 'green' : o.tone === 'warn' ? 'orange' : 'blue'}` }, icon(o.icon, 16)), h('p', { class: 'clamp' }, o.text))) : [h('p', { class: 'muted' }, 'Compila la tua storia e registra gli attacchi: qui comparirà un riassunto in stile anamnesi.')]),
-      button({ label: 'Leggi la sintesi completa', kind: 'ghost', block: true, onClick: () => openClinicalSummary() }),
+      cardTitle(t('Sintesi clinica'), h('button', { type: 'button', class: 'link', onclick: () => openClinicalSummary() }, t('Apri'))),
+      ...(obs.length ? obs.map((o) => h('div', { class: 'insight' }, h('span', { class: `row-icon ${o.tone === 'good' ? 'green' : o.tone === 'warn' ? 'orange' : 'blue'}` }, icon(o.icon, 16)), h('p', { class: 'clamp' }, o.text))) : [h('p', { class: 'muted' }, t('Compila la tua storia e registra gli attacchi: qui comparirà un riassunto in stile anamnesi.'))]),
+      button({ label: t('Leggi la sintesi completa'), kind: 'ghost', block: true, onClick: () => openClinicalSummary() }),
     ));
   }
 
@@ -119,33 +122,33 @@ export function recordView() {
   const lastMidas = midas[midas.length - 1];
   const lastDoc = [...db.docs].sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1))[0];
 
-  nodes.push(headline('La mia cartella'));
+  nodes.push(headline(t('La mia cartella')));
   nodes.push(group(
     row({
-      icon: 'book', tone: 'indigo', title: 'La mia storia', subtitle: `${plural(comp.done, 'sezione compilata', 'sezioni compilate')} su ${comp.total}`, right: h('span', { class: 'progress-ring', style: { '--p': String(Math.round((comp.done / comp.total) * 100)) }, 'data-label': `${comp.done}/${comp.total}` }), chevron: true, onClick: () => openHistory(),
+      icon: 'book', tone: 'indigo', title: t('La mia storia'), subtitle: t('{done, plural, one {# sezione compilata} other {# sezioni compilate}} su {total}', { done: comp.done, total: comp.total }), right: h('span', { class: 'progress-ring', style: { '--p': String(Math.round((comp.done / comp.total) * 100)) }, 'data-label': `${comp.done}/${comp.total}` }), chevron: true, onClick: () => openHistory(),
     }),
     row({
       icon: 'shield',
       tone: 'green',
-      title: 'Terapie di prevenzione',
-      subtitle: active.length ? active.map((p) => p.name).join(', ') : (db.preventives.length ? 'Nessuna in corso' : 'Anticorpi monoclonali, tossina botulinica, antidepressivi…'),
-      right: dueCount ? pill('Da fare', 'orange') : (db.preventives.length ? String(db.preventives.length) : null),
+      title: t('Terapie di prevenzione'),
+      subtitle: active.length ? active.map((p) => tv(p.name)).join(', ') : (db.preventives.length ? t('Nessuna in corso') : t('Anticorpi monoclonali, tossina botulinica, antidepressivi…')),
+      right: dueCount ? pill(t('Da fare'), 'orange') : (db.preventives.length ? String(db.preventives.length) : null),
       chevron: true,
       onClick: () => openTherapies(),
     }),
     row({
-      icon: 'folder', tone: 'blue', title: 'Documenti', subtitle: db.docs.length ? `Ultimo: ${lastDoc.title}` : 'Referti, risonanze, piani terapeutici', right: db.docs.length ? String(db.docs.length) : null, chevron: true, onClick: () => openDocuments(),
+      icon: 'folder', tone: 'blue', title: t('Documenti'), subtitle: db.docs.length ? t('Ultimo: {titolo}', { titolo: lastDoc.title }) : t('Referti, risonanze, piani terapeutici'), right: db.docs.length ? String(db.docs.length) : null, chevron: true, onClick: () => openDocuments(),
     }),
     row({
-      icon: 'hospital', tone: 'red', title: 'Centro curante e visite', subtitle: visitsNext ? `Prossima: ${fmtDateShort(visitsNext.at.slice(0, 10))} alle ${fmtTime(visitsNext.at)}` : (main ? main.name : 'Contatti dell’ospedale, visite, domande'), chevron: true, onClick: () => openCare(),
+      icon: 'hospital', tone: 'red', title: t('Centro curante e visite'), subtitle: visitsNext ? t('Prossima: {data} alle {ora}', { data: fmtDateShort(visitsNext.at.slice(0, 10)), ora: fmtTime(visitsNext.at) }) : (main ? main.name : t('Contatti dell’ospedale, visite, domande')), chevron: true, onClick: () => openCare(),
     }),
     row({
-      icon: 'clipboard', tone: 'orange', title: 'Questionario MIDAS', subtitle: lastMidas ? `Ultimo: ${lastMidas.score} (grado ${lastMidas.grade.grade}) il ${fmtDateShort(lastMidas.date)}` : 'Quanto il mal di testa limita la tua vita', chevron: true, onClick: () => openMidas(),
+      icon: 'clipboard', tone: 'orange', title: t('Questionario MIDAS'), subtitle: lastMidas ? t('Ultimo: {punteggio} (grado {grado}) il {data}', { punteggio: lastMidas.score, grado: lastMidas.grade.grade, data: fmtDateShort(lastMidas.date) }) : t('Quanto il mal di testa limita la tua vita'), chevron: true, onClick: () => openMidas(),
     }),
   ));
   nodes.push(group(row({
-    icon: 'file', tone: 'gray', title: 'Report per il medico', subtitle: 'PDF con sintesi, terapie, andamento e attacchi', chevron: true, onClick: () => openReport(),
+    icon: 'file', tone: 'gray', title: t('Report per il medico'), subtitle: t('PDF con sintesi, terapie, andamento e attacchi'), chevron: true, onClick: () => openReport(),
   })));
-  nodes.push(footnote('La cartella resta solo su questo telefono. Fai ogni tanto un backup completo da Impostazioni › Dati e backup.'));
-  return { title: 'Cartella', sub: db.settings.name || '', node: h('div', {}, ...nodes) };
+  nodes.push(footnote(t('La cartella resta solo su questo telefono. Fai ogni tanto un backup completo da {percorso}.', { percorso: `${t('Impostazioni')} › ${t('Dati e backup')}` })));
+  return { title: t('Cartella'), sub: db.settings.name || '', node: h('div', {}, ...nodes) };
 }

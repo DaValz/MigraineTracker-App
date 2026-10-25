@@ -33,11 +33,11 @@ results = []
 
 
 class Ctx:
-    def __init__(self, pw, seed=None, scheme="light", share=True, **kw):
+    def __init__(self, pw, seed=None, scheme="light", share=True, locale="it-IT", **kw):
         self.browser = getattr(pw, engine).launch()
         self.context = self.browser.new_context(
             viewport={"width": 402, "height": 874}, device_scale_factor=2, is_mobile=True, has_touch=True,
-            locale="it-IT", timezone_id="Europe/Rome", color_scheme=scheme, accept_downloads=True, **kw,
+            locale=locale, timezone_id="Europe/Rome", color_scheme=scheme, accept_downloads=True, **kw,
         )
         if share:
             self.context.add_init_script(MOCK_SHARE)
@@ -1025,6 +1025,378 @@ def s26_report_with_history_and_agenda(pw):
     txt = p.evaluate("window.__shared[0].text")
     assert "Erenumab" in txt and "MIDAS:" in txt, txt
     ensure_clean(ctx, "report v2")
+    return ctx
+
+
+LANG_DIR = Path(__file__).parent.parent / "js" / "i18n"
+
+
+def i18n_dict(code):
+    txt = (LANG_DIR / f"{code}.js").read_text(encoding="utf-8")
+    return json.loads(txt[txt.index("{"):txt.rindex("}") + 1])
+
+
+def lang_state(page):
+    return page.evaluate("() => ({ html: document.documentElement.lang, stored: localStorage.getItem('emicrania.lang') })")
+
+
+def core(db):
+    """Dati che devono restare identici quando cambia solo la lingua (il salvataggio puo' normalizzare altri campi)."""
+    eps = sorted((e["id"], e["start"], e["intensity"], tuple(e["triggers"]), tuple(m["name"] for m in e["meds"])) for e in db["episodes"].values())
+    return eps, sorted(db["days"]), len(db["preventives"])
+
+
+def open_settings_any(page):
+    """Impostazioni in qualunque lingua (il pulsante del profilo e' l'ultimo della barra in alto)."""
+    page.locator(".topbar .nav-btn").last.click()
+    page.wait_for_timeout(450)
+
+
+def pick_language(page, name):
+    """Impostazioni › Lingua › <nome>: l'app si ricarica nella nuova lingua."""
+    page.locator(".page").last.locator(".row", has_text=re.compile(r"^(Lingua|Language|Idioma|Langue|Sprache|Idioma|Limbă|Taal)")).click()
+    settle(page)
+    with page.expect_navigation():
+        page.locator(".page").last.locator(".row", has_text=name).click()
+    page.wait_for_selector(".tabbar")
+    settle(page)
+
+
+@scenario
+def s27_language_switch_keeps_data(pw):
+    en, ro = i18n_dict("en"), i18n_dict("ro")
+    ctx = Ctx(pw, seed=make_db(days=60, seed=41), locale="en-US")
+    p = ctx.page
+    assert lang_state(p) == {"html": "it", "stored": "it"}, "chi ha gia' dei dati resta in italiano anche con il telefono in inglese"
+    expect(p.locator(".tabbar .tab").first).to_contain_text("Oggi")
+    before = core(ctx.db())
+    open_settings(p)
+    p.locator(".page").last.locator(".row", has_text="Lingua").click()
+    settle(p)
+    rows = p.locator(".page").last.locator(".row")
+    assert rows.count() == 8, rows.count()
+    assert rows.nth(0).get_attribute("aria-current") == "true"
+    names = [rows.nth(i).inner_text().strip() for i in range(8)]
+    assert names == ["Italiano", "English", "Español", "Français", "Deutsch", "Português", "Română", "Nederlands"], names
+    page_url = p.url
+    with p.expect_navigation():
+        rows.filter(has_text="English").click()
+    p.wait_for_selector(".tabbar")
+    settle(p)
+    assert p.url == page_url
+    assert lang_state(p) == {"html": "en", "stored": "en"}
+    labels = [t.strip() for t in p.locator(".tabbar .tab").all_inner_texts()]
+    assert labels == [en["Oggi"], en["Diario"], en["Analisi"], en["Cartella"]], labels
+    assert core(ctx.db()) == before, "il cambio lingua non tocca i dati"
+    # i valori salvati restano in italiano nel database ma si leggono nella lingua scelta
+    p.locator(".tab-fab").click()
+    settle(p)
+    assert en["Poco sonno"] != "Poco sonno"
+    p.locator("summary.acc-sum", has_text=en["Fattori scatenanti"]).click()
+    settle(p)
+    expect(p.locator(".chip", has_text=en["Poco sonno"]).first).to_be_visible()
+    expect(p.locator(".chip", has_text=re.compile(r"^Poco sonno$"))).to_have_count(0)
+    p.locator(".page").last.get_by_role("button", name=en["Annulla"]).click()
+    settle(p)
+    open_settings_any(p)
+    expect(p.locator(".page").last.locator(".row", has_text=en["Lingua"])).to_contain_text("English")
+    pick_language(p, "Română")
+    assert lang_state(p) == {"html": "ro", "stored": "ro"}
+    expect(p.locator(".tabbar .tab").nth(3)).to_have_text(ro["Cartella"])
+    p.reload()
+    p.wait_for_selector(".tabbar")
+    assert lang_state(p) == {"html": "ro", "stored": "ro"}, "la scelta resta dopo il riavvio"
+    open_settings_any(p)
+    pick_language(p, "Italiano")
+    assert lang_state(p) == {"html": "it", "stored": "it"}
+    expect(p.locator(".tabbar .tab").first).to_contain_text("Oggi")
+    assert core(ctx.db()) == before
+    ensure_clean(ctx, "language switch")
+    return ctx
+
+
+@scenario
+def s28_language_follows_the_phone_for_new_users(pw):
+    expected = {"pt-BR": "pt", "de-AT": "de", "nl-NL": "nl", "ja-JP": "en", "it-IT": "it", "fr-CA": "fr"}
+    for loc, code in expected.items():
+        ctx = Ctx(pw, locale=loc)
+        try:
+            p = ctx.page
+            assert lang_state(p) == {"html": code, "stored": code}, (loc, lang_state(p))
+            title = p.locator(".sheet-wrap .sheet-title").inner_text()
+            assert title == (i18n_dict(code)["Benvenuto"] if code != "it" else "Benvenuto"), (loc, title)
+            ensure_clean(ctx, f"welcome {loc}")
+        finally:
+            ctx.close()
+    ctx = Ctx(pw, locale="it-IT")
+    p = ctx.page
+    es = i18n_dict("es")
+    p.locator(".sheet-wrap .row", has_text="Lingua").click()
+    settle(p)
+    with p.expect_navigation():
+        p.locator(".page").last.locator(".row", has_text="Español").click()
+    p.wait_for_selector(".sheet-wrap .sheet-title")
+    assert p.locator(".sheet-wrap .sheet-title").inner_text() == es["Benvenuto"]
+    assert lang_state(p) == {"html": "es", "stored": "es"}
+    p.get_by_role("button", name=es["Inizia"]).click()
+    p.wait_for_selector(".sheet-wrap", state="detached")
+    assert ctx.db()["settings"]["welcomeDone"] is True
+    ensure_clean(ctx, "welcome language picker")
+    return ctx
+
+
+SYN_NOTE = "\n".join([
+    "2025",
+    "12.03 emicrania forte 8/10, lato sinistro, nausea, 2 oki",
+    "13.03 ^^",
+    "Primi di aprile",
+    "2.04 leggero",
+    "5.04 ciclo",
+    "6.04 nessun dolore",
+    "10.04 pronto soccorso per emicrania fortissima, flebo",
+])
+
+
+def make_text_pdf(pages):
+    """PDF minimo con testo vero (selezionabile), una lista di righe per pagina."""
+    def esc(s):
+        return s.replace("\\", "\\\\").replace("(", "\\(").replace(")", "\\)")
+    objs = ["<< /Type /Catalog /Pages 2 0 R >>"]
+    kids = " ".join(f"{3 + 2 * i} 0 R" for i in range(len(pages)))
+    objs.append(f"<< /Type /Pages /Kids [{kids}] /Count {len(pages)} >>")
+    font_id = 3 + 2 * len(pages)
+    for i, lines in enumerate(pages):
+        body = "BT /F1 12 Tf 18 TL 50 780 Td " + " T* ".join(f"({esc(line)}) Tj" for line in lines) + " ET"
+        objs.append(f"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Contents {4 + 2 * i} 0 R /Resources << /Font << /F1 {font_id} 0 R >> >> >>")
+        objs.append(f"<< /Length {len(body.encode('latin-1'))} >>\nstream\n{body}\nendstream")
+    objs.append("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>")
+    out = bytearray(b"%PDF-1.4\n")
+    offsets = []
+    for n, o in enumerate(objs, start=1):
+        offsets.append(len(out))
+        out += f"{n} 0 obj\n".encode() + o.encode("latin-1") + b"\nendobj\n"
+    xref = len(out)
+    out += f"xref\n0 {len(objs) + 1}\n0000000000 65535 f \n".encode()
+    for off in offsets:
+        out += f"{off:010d} 00000 n \n".encode()
+    out += f"trailer\n<< /Size {len(objs) + 1} /Root 1 0 R >>\nstartxref\n{xref}\n%%EOF\n".encode()
+    return bytes(out)
+
+
+def open_import(page):
+    close_pages(page)
+    open_data(page)
+    page.locator(".page").last.locator(".row", has_text="Importa dalle note").click()
+    page.wait_for_timeout(550)
+    expect(page.locator(".page").last.get_by_role("button", name="Scegli un file")).to_be_visible()
+
+
+def paste_note(page, text):
+    page.locator(".page").last.get_by_role("button", name="Incolla il testo").click()
+    page.wait_for_timeout(400)
+    page.locator("textarea").fill(text)
+    page.get_by_role("button", name="Leggi il testo").click()
+    page.wait_for_selector(".imp-foot", timeout=15000)
+    page.wait_for_timeout(500)
+
+
+def imp_row(page, text):
+    return page.locator(".imp-row", has_text=text).first
+
+
+@scenario
+def s29_import_notes_paste_review_undo(pw):
+    ctx = Ctx(pw)
+    p = ctx.page
+    p.get_by_role("button", name="Inizia").click()
+    p.wait_for_selector(".sheet-wrap", state="detached")
+    open_import(p)
+    paste_note(p, SYN_NOTE)
+    expect(p.locator(".imp-sum-n")).to_have_text("4")
+    expect(p.locator(".imp-foot .btn")).to_contain_text("Importa 4 attacchi")
+    pills = p.locator(".imp-pills.center-row").inner_text()
+    assert "Giorni di ciclo: 1" in pills and "Giorni senza dolore: 1" in pills, pills
+    assert imp_row(p, "ciclo").locator(".ep-badge.mark.menses").count() == 1
+    assert imp_row(p, "nessun dolore").locator(".ep-badge.mark.free").count() == 1
+    # escludere una riga e correggerne un'altra
+    imp_row(p, "leggero").locator(".imp-check").click()
+    expect(p.locator(".imp-sum-n")).to_have_text("3")
+    imp_row(p, "emicrania forte").locator(".ep-card").click()
+    settle(p)
+    int_btn(p, 6).click()
+    p.get_by_role("button", name="Fatto", exact=True).click()
+    settle(p)
+    expect(imp_row(p, "emicrania forte").locator(".ep-badge")).to_have_text("6")
+    p.locator(".imp-foot .btn").click()
+    expect(p.locator(".sheet-wrap .sheet-title").last).to_have_text("Importazione completata")
+    expect(p.locator(".sheet-wrap").last).to_contain_text("Aggiunti 3 attacchi")
+    db = ctx.db()
+    eps = sorted(db["episodes"].values(), key=lambda e: e["start"])
+    assert [e["start"][:10] for e in eps] == ["2025-03-12", "2025-03-13", "2025-04-10"], [e["start"] for e in eps]
+    assert all(e["timeUnknown"] and e["start"].endswith("T12:00") and e["imp"] == eps[0]["imp"] for e in eps)
+    assert eps[0]["intensity"] == 6 and eps[0]["side"] == "sx" and "Nausea" in eps[0]["symptoms"]
+    assert [m["name"] for m in eps[0]["meds"]] == ["Ketoprofene", "Ketoprofene"], eps[0]["meds"]
+    assert eps[1]["intensity"] == 8 and eps[2]["intensity"] == 9
+    assert db["days"]["2025-04-05"]["menses"] is True and db["days"]["2025-04-06"]["free"] is True
+    assert db["settings"]["cycle"] is True
+    assert len(db["history"]["events"]) == 1 and db["history"]["events"][0]["er"] is True and db["history"]["events"][0]["date"] == "2025-04-10"
+    # annullare riporta tutto com'era
+    p.get_by_role("button", name="Annulla importazione", exact=True).click()
+    p.locator(".dialog .dlg-btn", has_text="Annulla importazione").click()
+    expect(p.locator(".toast")).to_contain_text("Importazione annullata")
+    db = ctx.db()
+    assert not db["episodes"] and not db["days"] and not db["history"]["events"] and not db["settings"]["cycle"], db
+    # di nuovo, poi «Vai al diario» porta al mese del primo attacco
+    open_import(p)
+    paste_note(p, SYN_NOTE)
+    p.locator(".imp-foot .btn").click()
+    expect(p.locator(".sheet-wrap .sheet-title").last).to_have_text("Importazione completata")
+    p.get_by_role("button", name="Vai al diario").click()
+    p.wait_for_selector(".sheet-wrap", state="detached")
+    settle(p)
+    expect(p.locator(".tabbar .tab.active")).to_contain_text("Diario")
+    expect(p.locator(".cal-title")).to_have_text("Marzo 2025")
+    expect(p.locator(".stat", has_text="Attacchi").locator(".stat-value")).to_have_text("2")
+    # rileggere la stessa nota non crea doppioni
+    open_import(p)
+    expect(p.locator(".page").last.locator(".row", has_text="attacchi")).to_have_count(1)
+    paste_note(p, SYN_NOTE)
+    expect(p.locator(".alert", has_text="giorni sono già nel diario")).to_be_visible()
+    expect(p.locator(".imp-foot .btn")).to_contain_text("Importa i giorni segnati")
+    p.locator(".page").last.get_by_role("button", name="Indietro").click()
+    settle(p)
+    # eliminare un'intera importazione dall'elenco
+    p.locator(".page").last.locator(".row", has_text="attacchi").click()
+    p.locator(".dialog .dlg-btn", has_text="Elimina").click()
+    expect(p.locator(".toast")).to_contain_text("Attacchi eliminati")
+    assert not ctx.db()["episodes"]
+    ensure_clean(ctx, "import paste")
+    return ctx
+
+
+@scenario
+def s30_import_notes_files_and_errors(pw):
+    ctx = Ctx(pw, seed=make_db(days=20, seed=51))
+    p = ctx.page
+    open_import(p)
+    file_input = p.locator(".page").last.locator("input[type=file]")
+    # testo normale, con intestazioni e righe a capo
+    file_input.set_input_files({"name": "diario.txt", "mimeType": "text/plain", "buffer": SYN_NOTE.encode("utf-8")})
+    p.wait_for_selector(".imp-foot", timeout=15000)
+    expect(p.locator(".imp-sum-n")).to_have_text("4")
+    expect(p.locator(".imp-page")).to_contain_text("diario.txt")
+    p.locator(".page").last.get_by_role("button", name="Indietro").click()
+    settle(p)
+    # PDF con testo vero (due pagine, accenti)
+    pdf = make_text_pdf([["2025", "12.03 emicrania forte 8/10, caff\xe8 e nausea", "13.03 ^^"], ["14.03 aura visiva, 2 oki", "Pagina 2"]])
+    file_input.set_input_files({"name": "Diario emicrania.pdf", "mimeType": "application/pdf", "buffer": pdf})
+    p.wait_for_selector(".imp-foot", timeout=30000)
+    expect(p.locator(".imp-sum-n")).to_have_text("3")
+    expect(imp_row(p, "caffè")).to_be_visible()
+    expect(imp_row(p, "aura visiva")).to_contain_text("Ketoprofene ×2")
+    p.locator(".page").last.get_by_role("button", name="Indietro").click()
+    settle(p)
+    # documento Word
+    import io
+    import zipfile
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w") as z:
+        z.writestr("word/document.xml", "<w:document><w:body><w:p><w:r><w:t>2025</w:t></w:r></w:p><w:p><w:r><w:t>12.03 forte con </w:t></w:r><w:r><w:t>2 oki</w:t></w:r></w:p></w:body></w:document>")
+    file_input.set_input_files({"name": "diario.docx", "mimeType": "application/vnd.openxmlformats-officedocument.wordprocessingml.document", "buffer": buf.getvalue()})
+    p.wait_for_selector(".imp-foot", timeout=15000)
+    expect(p.locator(".imp-sum-n")).to_have_text("1")
+    p.locator(".page").last.get_by_role("button", name="Indietro").click()
+    settle(p)
+    # errori comprensibili
+    file_input.set_input_files({"name": "foto.png", "mimeType": "image/png", "buffer": make_png()})
+    expect(p.locator(".toast.error").last).to_contain_text("è un’immagine")
+    p.wait_for_timeout(300)
+    file_input.set_input_files({"name": "scansione.pdf", "mimeType": "application/pdf", "buffer": make_pdf(("Solo immagine",))})
+    expect(p.locator(".toast.error").last).to_contain_text("non c’è testo selezionabile", timeout=30000)
+    file_input.set_input_files({"name": "vuoto.txt", "mimeType": "text/plain", "buffer": b"  \n "})
+    expect(p.locator(".toast.error").last).to_contain_text("è vuoto")
+    file_input.set_input_files({"name": "diario.pages", "mimeType": "application/octet-stream", "buffer": b"PK\x03\x04"})
+    expect(p.locator(".toast.error").last).to_contain_text("Formato non supportato")
+    # testo senza date: spiega cosa fare invece di importare nulla
+    p.locator(".page").last.get_by_role("button", name="Incolla il testo").click()
+    p.locator("textarea").fill("lista della spesa\nlatte\nuova")
+    p.get_by_role("button", name="Leggi il testo").click()
+    expect(p.locator(".sheet-wrap .sheet-title").last).to_have_text("Non ho trovato date")
+    expect(p.locator(".sheet-wrap .imp-pre")).to_contain_text("lista della spesa")
+    p.locator(".sheet-wrap .btn", has_text="Chiudi").click()
+    assert not [e for e in ctx.db()["episodes"].values() if e.get("imp")], "nessuna importazione senza conferma"
+    ensure_clean(ctx, "import files")
+    return ctx
+
+
+@scenario
+def s31_import_entry_points(pw):
+    ctx = Ctx(pw)
+    p = ctx.page
+    p.locator(".sheet-wrap .row", has_text="Importa il diario dalle Note").click()
+    p.wait_for_selector(".sheet-wrap", state="detached")
+    expect(p.locator(".page").last.locator(".bar-title")).to_have_text("Importa dalle note")
+    assert ctx.db()["settings"]["welcomeDone"] is True
+    close_pages(p)
+    tab(p, "Diario")
+    card = p.locator(".view .card", has_text="Hai già un diario nelle Note?")
+    expect(card).to_be_visible()
+    card.get_by_role("button", name="Importa dalle note").click()
+    settle(p)
+    expect(p.locator(".page").last.get_by_role("button", name="Incolla il testo")).to_be_visible()
+    close_pages(p)
+    p.locator(".seg-btn", has_text="Elenco").click()
+    settle(p)
+    p.locator(".view").get_by_role("button", name="Importa dalle note").click()
+    settle(p)
+    expect(p.locator(".page").last.get_by_role("button", name="Scegli un file")).to_be_visible()
+    close_pages(p)
+    open_settings(p)
+    p.locator(".page").last.locator(".row", has_text="Guida, consigli e privacy").click()
+    settle(p)
+    p.locator("summary.acc-sum", has_text="Importare il diario dalle Note").click()
+    expect(p.locator(".page").last).to_contain_text("Importa dalle note o da un PDF")
+    ensure_clean(ctx, "import entry points")
+    return ctx
+
+
+SYN_MULTI = "\n".join([
+    "2025",
+    "3.3. starke Migräne 8/10, links, Übelkeit",
+    "4.3. very strong headache, nausea, took 2 ibuprofen",
+    "5.3. dolor muy fuerte, náuseas",
+    "6.3. migraine très forte, nausées",
+    "7.3. zeer sterke hoofdpijn, misselijk",
+    "8.3. dor muito forte, náusea",
+    "9.3. durere foarte puternică, greață",
+    "10.3. keine Schmerzen",
+])
+
+
+@scenario
+def s32_import_notes_in_other_languages(pw):
+    # Un diario scritto in piu' lingue (anche mescolate) si legge con la lingua dell'app impostata sull'italiano.
+    ctx = Ctx(pw)
+    p = ctx.page
+    p.get_by_role("button", name="Inizia").click()
+    p.wait_for_selector(".sheet-wrap", state="detached")
+    open_import(p)
+    paste_note(p, SYN_MULTI)
+    expect(p.locator(".imp-sum-n")).to_have_text("7")
+    expect(p.locator(".imp-foot .btn")).to_contain_text("Importa 7 attacchi")
+    assert imp_row(p, "keine Schmerzen").locator(".ep-badge.mark.free").count() == 1
+    for text in ("starke Migräne", "very strong headache", "dolor muy fuerte", "migraine très forte", "zeer sterke hoofdpijn", "dor muito forte", "durere foarte puternică"):
+        expect(imp_row(p, text).locator(".ep-badge")).to_have_text("8")
+    p.locator(".imp-foot .btn").click()
+    expect(p.locator(".sheet-wrap .sheet-title").last).to_have_text("Importazione completata")
+    db = ctx.db()
+    eps = sorted(db["episodes"].values(), key=lambda e: e["start"])
+    assert [e["start"][:10] for e in eps] == [f"2025-03-0{d}" for d in range(3, 10)], [e["start"] for e in eps]
+    assert all(e["intensity"] == 8 and "Nausea" in e["symptoms"] for e in eps), eps
+    assert eps[0]["side"] == "sx", eps[0]
+    assert [m["name"] for m in eps[1]["meds"]] == ["Ibuprofene", "Ibuprofene"], eps[1]["meds"]
+    assert db["days"]["2025-03-10"]["free"] is True
+    ensure_clean(ctx, "import other languages")
     return ctx
 
 

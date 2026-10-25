@@ -9,15 +9,22 @@ import { intensityColor, typeLabel } from '../data.js';
 import {
   todayStr, monthOf, addMonths, fmtMonthYear, weekdayMon, daysInMonth, monthStart, monthEnd, WEEKDAYS_SHORT, fmtDateLong, pad,
 } from '../dates.js';
-import { plural } from '../format.js';
+import { t, tv } from '../i18n.js';
 import { intensityLegend } from '../charts.js';
 import { episodeCard, monthHeader } from './shared.js';
 import { openDaySheet } from './day.js';
 import { openEpisodeEditor } from './episode.js';
+import { openNotesImport } from './notes-import.js';
 
 const state = {
   month: null, mode: 'month', query: '', filter: 'all',
 };
+
+/** Porta il diario sul mese indicato (usato dopo un'importazione). */
+export function showCalendarMonth(month) {
+  if (month) state.month = month;
+  state.mode = 'month';
+}
 
 const FILTERS = {
   all: () => true,
@@ -26,8 +33,10 @@ const FILTERS = {
   aura: (e) => e.type === 'con_aura' || e.aura.length > 0,
 };
 
+// Si cerca sia nei valori salvati (italiano) sia nel testo mostrato nella lingua corrente.
 function haystack(e) {
-  return [e.note, typeLabel(e.type), ...e.areas, ...e.symptoms, ...e.triggers, ...e.meds.map((m) => m.name)].join(' ').toLowerCase();
+  const stored = [...e.areas, ...e.symptoms, ...e.triggers, ...e.meds.map((m) => m.name)];
+  return `${[e.note, typeLabel(e.type), ...stored].join(' ')}\n${stored.map((v) => tv(v)).join(' ')}`.toLowerCase();
 }
 
 function monthGrid(idx, db, month, today, rerender) {
@@ -40,7 +49,11 @@ function monthGrid(idx, db, month, today, rerender) {
     const st = dayStatus(idx, db, date);
     const inten = idx.intensityByDay.get(date) || 0;
     const hasMeds = idx.medDays.has(date);
-    const label = `${fmtDateLong(date)}: ${st === 'migraine' ? `emicrania, intensità ${inten}` : st === 'free' ? 'nessuna emicrania (confermato)' : st === 'future' ? 'giorno futuro' : 'nessun attacco'}`;
+    const data = fmtDateLong(date);
+    const label = st === 'migraine' ? t('{data}: emicrania, intensità {intensita}', { data, intensita: inten })
+      : st === 'free' ? t('{data}: nessuna emicrania (confermato)', { data })
+        : st === 'future' ? t('{data}: giorno futuro', { data })
+          : t('{data}: nessun attacco', { data });
     cells.push(h(
       'button',
       {
@@ -63,9 +76,9 @@ function monthGrid(idx, db, month, today, rerender) {
     sy = e.touches[0].clientY;
   }, { passive: true });
   wrap.addEventListener('touchend', (e) => {
-    const t = e.changedTouches[0];
-    const dx = t.clientX - sx;
-    const dy = t.clientY - sy;
+    const touch = e.changedTouches[0];
+    const dx = touch.clientX - sx;
+    const dy = touch.clientY - sy;
     if (Math.abs(dx) > 60 && Math.abs(dy) < 45) {
       state.month = addMonths(state.month, dx < 0 ? 1 : -1);
       rerender();
@@ -80,14 +93,14 @@ function monthView(idx, db, today, rerender) {
   const nav = h(
     'div',
     { class: 'cal-head' },
-    h('button', { type: 'button', class: 'icon-btn', 'aria-label': 'Mese precedente', onclick: () => { state.month = addMonths(month, -1); rerender(); } }, icon('chevron-left', 20)),
-    h('button', { type: 'button', class: 'cal-title', style: { background: 'none', border: 0 }, onclick: () => { state.month = monthOf(today); rerender(); }, 'aria-label': `${fmtMonthYear(month)}, torna a oggi` }, fmtMonthYear(month)),
-    h('button', { type: 'button', class: 'icon-btn', 'aria-label': 'Mese successivo', onclick: () => { state.month = addMonths(month, 1); rerender(); } }, icon('chevron-right', 20)),
+    h('button', { type: 'button', class: 'icon-btn', 'aria-label': t('Mese precedente'), onclick: () => { state.month = addMonths(month, -1); rerender(); } }, icon('chevron-left', 20)),
+    h('button', { type: 'button', class: 'cal-title', style: { background: 'none', border: 0 }, onclick: () => { state.month = monthOf(today); rerender(); }, 'aria-label': t('{mese}, torna a oggi', { mese: fmtMonthYear(month) }) }, fmtMonthYear(month)),
+    h('button', { type: 'button', class: 'icon-btn', 'aria-label': t('Mese successivo'), onclick: () => { state.month = addMonths(month, 1); rerender(); } }, icon('chevron-right', 20)),
   );
   const dow = h('div', { class: 'cal-dow' }, WEEKDAYS_SHORT.map((d) => h('span', {}, d.slice(0, 3))));
   const legend = h('div', { class: 'legend' }, [
-    h('span', { class: 'legend-item' }, h('span', { class: 'swatch free' }), 'Senza emicrania'),
-    h('span', { class: 'legend-item' }, h('i', { class: 'cal-mark', style: { display: 'inline-block', color: 'var(--text-2)' } }), 'Farmaco assunto'),
+    h('span', { class: 'legend-item' }, h('span', { class: 'swatch free' }), t('Senza emicrania')),
+    h('span', { class: 'legend-item' }, h('i', { class: 'cal-mark', style: { display: 'inline-block', color: 'var(--text-2)' } }), t('Farmaco assunto')),
   ]);
   return h(
     'div',
@@ -102,20 +115,26 @@ function monthView(idx, db, today, rerender) {
     h(
       'div',
       { class: 'month-sum' },
-      statTile({ label: 'Giorni con emicrania', value: String(stats.migraineDays), tone: 'primary' }),
-      statTile({ label: 'Attacchi', value: String(stats.attacks) }),
-      statTile({ label: 'Giorni con farmaci', value: String(stats.acuteMedDays) }),
+      statTile({ label: t('Giorni con emicrania'), value: String(stats.migraineDays), tone: 'primary' }),
+      statTile({ label: t('Attacchi'), value: String(stats.attacks) }),
+      statTile({ label: t('Giorni con farmaci'), value: String(stats.acuteMedDays) }),
+    ),
+    idx.episodes.length ? null : h(
+      'div',
+      { class: 'card', style: { marginTop: '14px' } },
+      h('p', { class: 'muted', style: { marginBottom: '12px' } }, t('Hai già un diario nelle Note? Importalo e il calendario si compila da solo.')),
+      button({ label: t('Importa dalle note'), kind: 'secondary', icon: 'calendar-plus', block: true, onClick: () => openNotesImport() }),
     ),
   );
 }
 
 function listView(idx) {
   const search = h('input', {
-    class: 'input', type: 'search', placeholder: 'Cerca nelle note, sintomi, farmaci…', 'aria-label': 'Cerca negli attacchi', value: state.query, autocomplete: 'off',
+    class: 'input', type: 'search', placeholder: t('Cerca nelle note, sintomi, farmaci…'), 'aria-label': t('Cerca negli attacchi'), value: state.query, autocomplete: 'off',
   });
   const filters = chipGroup({
     options: [
-      { value: 'all', label: 'Tutti' }, { value: 'strong', label: 'Forti (7+)' }, { value: 'meds', label: 'Con farmaci' }, { value: 'aura', label: 'Con aura' },
+      { value: 'all', label: t('Tutti') }, { value: 'strong', label: t('Forti (7+)') }, { value: 'meds', label: t('Con farmaci') }, { value: 'aura', label: t('Con aura') },
     ],
     value: state.filter,
     allowClear: false,
@@ -128,9 +147,11 @@ function listView(idx) {
     if (!eps.length) {
       replaceChildren(box, emptyState({
         icon: 'search',
-        title: idx.episodes.length ? 'Nessun risultato' : 'Nessun attacco registrato',
-        text: idx.episodes.length ? 'Prova a cambiare filtro o ricerca.' : 'Quando registrerai un attacco comparirà qui.',
-        action: idx.episodes.length ? null : button({ label: 'Registra un attacco', icon: 'plus', onClick: () => openEpisodeEditor({}) }),
+        title: idx.episodes.length ? t('Nessun risultato') : t('Nessun attacco registrato'),
+        text: idx.episodes.length ? t('Prova a cambiare filtro o ricerca.') : t('Quando registrerai un attacco comparirà qui.'),
+        action: idx.episodes.length ? null : h('div', { class: 'stack' },
+          button({ label: t('Registra un attacco'), icon: 'plus', onClick: () => openEpisodeEditor({}) }),
+          button({ label: t('Importa dalle note'), kind: 'secondary', icon: 'calendar-plus', onClick: () => openNotesImport() })),
       }));
       return;
     }
@@ -139,7 +160,7 @@ function listView(idx) {
     let bucket = [];
     const flush = () => {
       if (!bucket.length) return;
-      nodes.push(monthHeader(fmtMonthYear(current), plural(bucket.length, 'attacco', 'attacchi')));
+      nodes.push(monthHeader(fmtMonthYear(current), t('{n, plural, one {# attacco} other {# attacchi}}', { n: bucket.length })));
       bucket.forEach((e) => nodes.push(episodeCard(e, { onClick: () => openEpisodeEditor({ id: e.id }) })));
       bucket = [];
     };
@@ -165,14 +186,14 @@ export function calendarView({ rerender }) {
   const idx = getIndex(db, store.getRev(), today);
   if (!state.month) state.month = monthOf(today);
   const modeSeg = segmented({
-    options: [{ value: 'month', label: 'Mese' }, { value: 'list', label: 'Elenco' }],
+    options: [{ value: 'month', label: t('Mese') }, { value: 'list', label: t('Elenco') }],
     value: state.mode,
-    ariaLabel: 'Modalità di visualizzazione',
+    ariaLabel: t('Modalità di visualizzazione'),
     onChange: (v) => { state.mode = v; rerender(); },
   });
   const body = state.mode === 'month' ? monthView(idx, db, today, rerender) : listView(idx);
   return {
-    title: 'Diario',
+    title: t('Diario'),
     sub: '',
     node: h('div', {}, h('div', { class: 'mb' }, modeSeg), body),
   };

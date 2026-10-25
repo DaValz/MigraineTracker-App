@@ -1,6 +1,8 @@
 import { h, clear, replaceChildren } from './dom.js';
 import { icon } from './icons.js';
 import { INTENSITY_COLORS, INTENSITY_LABELS, intensityBand } from './data.js';
+import { t, tv } from './i18n.js';
+import { capitalize, fmt } from './dates.js';
 
 let appEl = null;
 let overlayEl = null;
@@ -86,10 +88,10 @@ export function openFullscreen({ className = '', label = '' } = {}) {
   return api;
 }
 
-export function openPage({ title = '', right = null, backLabel = 'Indietro', onBack = null, className = '' } = {}) {
+export function openPage({ title = '', right = null, backLabel = null, onBack = null, className = '' } = {}) {
   const titleEl = h('h1', { class: 'bar-title' }, title);
-  const iconOnly = backLabel === 'Indietro';
-  const backBtn = h('button', { type: 'button', class: `bar-btn${iconOnly ? ' icon-only' : ''}`, 'aria-label': backLabel }, iconOnly ? icon('chevron-left', 22) : h('span', {}, backLabel));
+  const iconOnly = !backLabel;
+  const backBtn = h('button', { type: 'button', class: `bar-btn${iconOnly ? ' icon-only' : ''}`, 'aria-label': backLabel || t('Indietro') }, iconOnly ? icon('chevron-left', 22) : h('span', {}, backLabel));
   const rightEl = h('div', { class: 'bar-right' }, right);
   const header = h('header', { class: 'bar' }, h('div', { class: 'bar-inner' }, backBtn, titleEl, rightEl));
   const body = h('div', { class: 'page-body' });
@@ -100,9 +102,9 @@ export function openPage({ title = '', right = null, backLabel = 'Indietro', onB
     el,
     body,
     header,
-    setTitle(t) {
-      titleEl.textContent = t;
-      el.setAttribute('aria-label', t);
+    setTitle(text) {
+      titleEl.textContent = text;
+      el.setAttribute('aria-label', text);
     },
     setRight(...nodes) {
       replaceChildren(rightEl, ...nodes);
@@ -123,7 +125,7 @@ export function openPage({ title = '', right = null, backLabel = 'Indietro', onB
 export function openSheet({ title = '', onDismiss = null, className = '', tall = false } = {}) {
   const body = h('div', { class: 'sheet-body' });
   const titleEl = h('h2', { class: 'sheet-title' }, title);
-  const closeBtn = h('button', { class: 'sheet-close', type: 'button', 'aria-label': 'Chiudi' }, icon('x', 20));
+  const closeBtn = h('button', { class: 'sheet-close', type: 'button', 'aria-label': t('Chiudi') }, icon('x', 20));
   const panel = h(
     'div',
     { class: `sheet${tall ? ' tall' : ''} ${className}`.trim(), role: 'dialog', 'aria-modal': 'true', 'aria-label': title },
@@ -137,8 +139,8 @@ export function openSheet({ title = '', onDismiss = null, className = '', tall =
   const api = {
     el,
     body,
-    setTitle(t) {
-      titleEl.textContent = t;
+    setTitle(text) {
+      titleEl.textContent = text;
     },
     close() {
       unmount(entry);
@@ -180,7 +182,7 @@ export function openDialog({ title, message = '', content = null, buttons, dismi
   });
 }
 
-export function confirmDialog({ title, message = '', confirmLabel = 'Conferma', cancelLabel = 'Annulla', danger = false }) {
+export function confirmDialog({ title, message = '', confirmLabel = t('Conferma'), cancelLabel = t('Annulla'), danger = false }) {
   return openDialog({
     title,
     message,
@@ -192,12 +194,12 @@ export function confirmDialog({ title, message = '', confirmLabel = 'Conferma', 
   });
 }
 
-export function alertDialog({ title, message = '', okLabel = 'OK' }) {
+export function alertDialog({ title, message = '', okLabel = t('OK') }) {
   return openDialog({ title, message, dismissValue: true, buttons: [{ label: okLabel, value: true, kind: 'primary' }] });
 }
 
 export function promptDialog({
-  title, message = '', value = '', placeholder = '', confirmLabel = 'Salva', maxLength = 80, inputMode = 'text', type = 'text', extra = null,
+  title, message = '', value = '', placeholder = '', confirmLabel = t('Salva'), maxLength = 80, inputMode = 'text', type = 'text', extra = null,
 }) {
   const input = h('input', {
     class: 'input', type, value, placeholder, maxlength: maxLength, inputmode: inputMode, autocomplete: 'off', autocapitalize: 'sentences', 'aria-label': title,
@@ -209,12 +211,12 @@ export function promptDialog({
     content,
     dismissValue: null,
     buttons: [
-      { label: 'Annulla', value: null },
+      { label: t('Annulla'), value: null },
       { label: confirmLabel, kind: 'primary', onClick: (done) => done(input.value.trim()) },
     ],
   });
   input.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') {
+    if (e.key === 'Enter') { // i18n-ignore
       e.preventDefault();
       const ok = content.parentElement && content.parentElement.querySelector('.dlg-btn.primary');
       if (ok) ok.click();
@@ -229,13 +231,13 @@ export function toast(message, { action = null, duration = 4200, tone = '' } = {
   if (!toastEl) return;
   clearTimeout(toastTimer);
   clear(toastEl);
-  const t = h('div', { class: `toast ${tone}`.trim(), role: 'status' }, h('span', { class: 'toast-msg' }, message));
+  const el = h('div', { class: `toast ${tone}`.trim(), role: 'status' }, h('span', { class: 'toast-msg' }, message));
   const dismiss = () => {
-    t.classList.remove('show');
-    setTimeout(() => t.remove(), 260);
+    el.classList.remove('show');
+    setTimeout(() => el.remove(), 260);
   };
   if (action) {
-    t.appendChild(h('button', {
+    el.appendChild(h('button', {
       type: 'button',
       class: 'toast-act',
       onclick: () => {
@@ -244,8 +246,8 @@ export function toast(message, { action = null, duration = 4200, tone = '' } = {
       },
     }, action.label));
   }
-  toastEl.appendChild(t);
-  requestAnimationFrame(() => t.classList.add('show'));
+  toastEl.appendChild(el);
+  requestAnimationFrame(() => el.classList.add('show'));
   toastTimer = setTimeout(dismiss, duration);
 }
 
@@ -257,7 +259,7 @@ export function button({ label, onClick, kind = 'primary', icon: ic = null, bloc
 }
 
 export function chipGroup({ options, value, multi = false, onChange, allowClear = true, cls = '' }) {
-  const opts = options.map((o) => (typeof o === 'string' ? { value: o, label: o } : o));
+  const opts = options.map((o) => (typeof o === 'string' ? { value: o, label: tv(o) } : o));
   let current = multi ? new Set(value || []) : (value == null || value === '' ? null : value);
   const root = h('div', { class: `chips ${cls}`.trim(), role: multi ? 'group' : 'radiogroup' });
   const btns = opts.map((o) => h('button', { type: 'button', class: 'chip', 'aria-pressed': 'false' }, o.label));
@@ -290,7 +292,7 @@ export function chipGroup({ options, value, multi = false, onChange, allowClear 
 }
 
 export function segmented({ options, value, onChange, ariaLabel = '', cls = '' }) {
-  const opts = options.map((o) => (typeof o === 'string' ? { value: o, label: o } : o));
+  const opts = options.map((o) => (typeof o === 'string' ? { value: o, label: tv(o) } : o));
   let current = value;
   const root = h('div', { class: `seg ${cls}`.trim(), role: 'radiogroup', 'aria-label': ariaLabel });
   const btns = opts.map((o) => h('button', { type: 'button', class: 'seg-btn', role: 'radio', 'aria-checked': 'false' }, o.label));
@@ -375,8 +377,8 @@ export function stepper({ value, min = 0, max = 99, step = 1, start = null, onCh
   let cur = value == null ? null : value;
   const base = start != null ? start : min;
   const out = h('output', { class: 'stepper-val', 'aria-live': 'polite' });
-  const dec = h('button', { type: 'button', class: 'stepper-btn', 'aria-label': `Diminuisci ${label}`.trim() }, icon('minus', 18));
-  const inc = h('button', { type: 'button', class: 'stepper-btn', 'aria-label': `Aumenta ${label}`.trim() }, icon('plus', 18));
+  const dec = h('button', { type: 'button', class: 'stepper-btn', 'aria-label': t('Diminuisci {label}', { label }).trim() }, icon('minus', 18));
+  const inc = h('button', { type: 'button', class: 'stepper-btn', 'aria-label': t('Aumenta {label}', { label }).trim() }, icon('plus', 18));
   const paint = () => {
     out.textContent = cur == null ? '—' : `${format(cur)}${unit ? ` ${unit}` : ''}`;
     out.classList.toggle('empty', cur == null);
@@ -453,12 +455,12 @@ export function textInput({ value = '', placeholder = '', onInput, maxLength = 1
 
 /** Selettore mese/anno (YYYY-MM) basato su due menu: funziona ovunque, anche dove manca <input type=month>. */
 export function monthInput({ value = '', onChange, label = '', allowEmpty = false, minYear = 1950, maxYear = new Date().getFullYear() }) {
-  const MONTHS = ['Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno', 'Luglio', 'Agosto', 'Settembre', 'Ottobre', 'Novembre', 'Dicembre'];
+  const MONTHS = Array.from({ length: 12 }, (_, i) => capitalize(fmt(new Date(2000, i, 1), { month: 'long' })));
   const [y0, m0] = value ? value.split('-') : ['', ''];
-  const month = h('select', { class: 'input select', 'aria-label': `${label} – mese` }, allowEmpty ? h('option', { value: '' }, '—') : null, MONTHS.map((m, i) => h('option', { value: String(i + 1).padStart(2, '0') }, m)));
+  const month = h('select', { class: 'input select', 'aria-label': t('{label} – mese', { label }) }, allowEmpty ? h('option', { value: '' }, '—') : null, MONTHS.map((m, i) => h('option', { value: String(i + 1).padStart(2, '0') }, m)));
   const years = [];
   for (let y = maxYear; y >= minYear; y -= 1) years.push(String(y));
-  const year = h('select', { class: 'input select', 'aria-label': `${label} – anno` }, allowEmpty ? h('option', { value: '' }, '—') : null, years.map((y) => h('option', { value: y }, y)));
+  const year = h('select', { class: 'input select', 'aria-label': t('{label} – anno', { label }) }, allowEmpty ? h('option', { value: '' }, '—') : null, years.map((y) => h('option', { value: y }, y)));
   month.value = m0 || (allowEmpty ? '' : '01');
   year.value = y0 || (allowEmpty ? '' : String(maxYear));
   const emit = () => {
@@ -471,13 +473,13 @@ export function monthInput({ value = '', onChange, label = '', allowEmpty = fals
   return h('div', { class: 'two-col' }, month, year);
 }
 
-export function hbars(items, { color = 'var(--primary)', format = (v) => String(v), max = null, empty = 'Nessun dato' } = {}) {
+export function hbars(items, { color = 'var(--primary)', format = (v) => String(v), max = null, empty = t('Nessun dato') } = {}) {
   if (!items.length) return h('p', { class: 'muted small' }, empty);
   const top = max != null ? max : Math.max(...items.map((i) => i.value), 1);
   return h('div', { class: 'hbars' }, items.map((i) => h(
     'div',
     { class: 'hbar' },
-    h('span', { class: 'hbar-label' }, i.label),
+    h('span', { class: 'hbar-label' }, typeof i.label === 'string' ? tv(i.label) : i.label),
     h('span', { class: 'hbar-track' }, h('span', { class: 'hbar-fill', style: { width: `${Math.max(2, (i.value / top) * 100)}%`, background: i.color || color } })),
     h('span', { class: 'hbar-val' }, i.text != null ? i.text : format(i.value)),
   )));
@@ -490,7 +492,7 @@ export function intensityPicker({ value = null, onChange }) {
     type: 'button',
     class: `int-btn${i >= 6 ? ' hi' : ''}`,
     style: { '--c': c },
-    'aria-label': `Intensità ${i + 1}: ${INTENSITY_LABELS[i]}`,
+    'aria-label': t('Intensità {n}: {etichetta}', { n: i + 1, etichetta: INTENSITY_LABELS[i] }),
     'aria-pressed': 'false',
   }, String(i + 1)));
   const paint = () => {
@@ -498,7 +500,7 @@ export function intensityPicker({ value = null, onChange }) {
       b.classList.toggle('on', cur === i + 1);
       b.setAttribute('aria-pressed', String(cur === i + 1));
     });
-    replaceChildren(desc, cur ? [`${cur} · ${INTENSITY_LABELS[cur - 1]} `, intensityBand(cur).toLowerCase() !== INTENSITY_LABELS[cur - 1].toLowerCase() ? h('small', {}, `(${intensityBand(cur).toLowerCase()})`) : null] : h('small', {}, 'Tocca un numero: 1 = appena percepibile, 10 = il peggiore mai provato'));
+    replaceChildren(desc, cur ? [`${cur} · ${INTENSITY_LABELS[cur - 1]} `, intensityBand(cur).toLowerCase() !== INTENSITY_LABELS[cur - 1].toLowerCase() ? h('small', {}, `(${intensityBand(cur).toLowerCase()})`) : null] : h('small', {}, t('Tocca un numero: 1 = appena percepibile, 10 = il peggiore mai provato')));
   };
   btns.forEach((b, i) => b.addEventListener('click', () => {
     cur = i + 1;
@@ -506,7 +508,7 @@ export function intensityPicker({ value = null, onChange }) {
     if (onChange) onChange(cur);
   }));
   paint();
-  return h('div', { class: 'int-wrap' }, h('div', { class: 'intensity', role: 'group', 'aria-label': 'Intensità del dolore da 1 a 10' }, btns), desc);
+  return h('div', { class: 'int-wrap' }, h('div', { class: 'intensity', role: 'group', 'aria-label': t('Intensità del dolore da 1 a 10') }, btns), desc);
 }
 
 export function accordion({ title, count = 0, open = false, children = [] }) {

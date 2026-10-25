@@ -6,6 +6,7 @@ import { getIndex, dayStatus, episodeMinutes } from './analysis.js';
 import {
   typeLabel, sideLabel, effectLabel, approxDurLabel, IMPACT_LEVELS, WORK_LEVELS, SLEEP_QUALITY_LABELS, STRESS_LABELS, MOOD_LABELS,
 } from './data.js';
+import { t, tv } from './i18n.js';
 
 export function downloadBlob(blob, filename) {
   const url = URL.createObjectURL(blob);
@@ -24,7 +25,7 @@ export async function shareFile({ blob, filename, title = '', text = '' }) {
       await navigator.share({ files: [file], title, text });
       return 'shared';
     } catch (e) {
-      if (e && e.name === 'AbortError') return 'cancelled';
+      if (e && e.name === 'AbortError') return 'cancelled'; // i18n-ignore
     }
   }
   downloadBlob(blob, filename);
@@ -37,7 +38,7 @@ export async function shareText({ text, title = '' }) {
       await navigator.share({ text, title });
       return 'shared';
     } catch (e) {
-      if (e && e.name === 'AbortError') return 'cancelled';
+      if (e && e.name === 'AbortError') return 'cancelled'; // i18n-ignore
     }
   }
   try {
@@ -55,29 +56,34 @@ function csvCell(v) {
 }
 
 const csvLine = (cells) => cells.map(csvCell).join(';');
-const csvFile = (lines) => `\ufeff${lines.join('\r\n')}\r\n`;
+const csvFile = (lines) => `\ufeff${lines.join('\r\n')}\r\n`; // i18n-ignore
 const fmtDec = (n) => (n == null ? '' : String(n).replace('.', ','));
 const fmtDT = (s) => (s ? `${s.slice(8, 10)}/${s.slice(5, 7)}/${s.slice(0, 4)} ${s.slice(11)}` : '');
 const fmtD = (s) => `${s.slice(8, 10)}/${s.slice(5, 7)}/${s.slice(0, 4)}`;
+const tvList = (list) => list.map((x) => tv(x)).join(', ');
 
 export function episodesCsv(db) {
   const rows = [csvLine([
-    'Inizio', 'Fine', 'Durata (min)', 'Intensità (1-10)', 'Tipo', 'Lato', 'Zone', 'Carattere del dolore', 'Aura', 'Sintomi',
-    'Fattori scatenanti', 'Farmaci', 'Impatto sulle attività', 'Lavoro/scuola', 'Rispetto a prima della terapia', 'Dose della terapia saltata', 'Note',
+    t('Inizio'), t('Fine'), t('Durata (min)'), t('Intensità (1-10)'), t('Tipo'), t('Lato'), t('Zone'), t('Carattere del dolore'), t('Aura'), t('Sintomi'),
+    t('Fattori scatenanti'), t('Farmaci'), t('Impatto sulle attività'), t('Lavoro/scuola'), t('Rispetto a prima della terapia'), t('Dose della terapia saltata'), t('Note'),
   ])];
-  const vsLabel = { better: 'Più leggero', same: 'Come prima', worse: 'Più forte' };
+  const vsLabel = { better: t('Più leggero'), same: t('Come prima'), worse: t('Più forte') };
   Object.values(db.episodes).sort((a, b) => (a.start < b.start ? -1 : 1)).forEach((e) => {
     const tu = e.timeUnknown;
-    const meds = e.meds.map((m) => `${m.name}${m.dose ? ` ${m.dose}` : ''}${tu ? ` il ${fmtD(m.at)}` : ` alle ${m.at.slice(11)}`}${m.effect != null ? ` [${effectLabel(m.effect)}]` : ''}`).join(' | ');
-    const start = tu ? `${fmtD(e.start)} (orario non ricordato)` : fmtDT(e.start);
-    let end = e.end ? fmtDT(e.end) : 'in corso';
+    const meds = e.meds.map((m) => {
+      const farmaco = `${tv(m.name)}${m.dose ? ` ${m.dose}` : ''}`;
+      const quando = tu ? t('{farmaco} il {data}', { farmaco, data: fmtD(m.at) }) : t('{farmaco} alle {ora}', { farmaco, ora: m.at.slice(11) });
+      return `${quando}${m.effect != null ? ` [${effectLabel(m.effect)}]` : ''}`;
+    }).join(' | ');
+    const start = tu ? t('{data} (orario non ricordato)', { data: fmtD(e.start) }) : fmtDT(e.start);
+    let end = e.end ? fmtDT(e.end) : t('in corso');
     if (tu) end = e.approxDur === 'days' ? fmtD(e.end) : (approxDurLabel(e.approxDur) || '');
     const tx = e.tx || {};
     rows.push(csvLine([
       start, end, episodeMinutes(e) == null ? '' : episodeMinutes(e), e.intensity, typeLabel(e.type), sideLabel(e.side),
-      e.areas.join(', '), e.quality.join(', '), e.aura.join(', '), e.symptoms.join(', '), e.triggers.join(', '), meds,
+      tvList(e.areas), tvList(e.quality), tvList(e.aura), tvList(e.symptoms), tvList(e.triggers), meds,
       (IMPACT_LEVELS.find((l) => l.v === e.impact) || {}).label || '', (WORK_LEVELS.find((l) => l.v === e.work) || {}).label || '',
-      vsLabel[tx.vs] || '', tx.missed === true ? 'sì' : (tx.missed === false ? 'no' : ''), e.note,
+      vsLabel[tx.vs] || '', tx.missed === true ? t('sì') : (tx.missed === false ? t('no') : ''), e.note,
     ]));
   });
   return csvFile(rows);
@@ -87,17 +93,19 @@ export function daysCsv(db) {
   const today = todayStr();
   const idx = getIndex(db, store.getRev(), today);
   const rows = [csvLine([
-    'Data', 'Stato', 'Sonno (ore)', 'Qualità del sonno', 'Stress', 'Umore', 'Acqua (bicchieri)', 'Caffè', 'Alcolici', 'Pasto saltato', 'Attività fisica',
-    'Mestruazioni', 'Pressione media (hPa)', 'Temperatura media (°C)', 'Umidità media (%)', 'Note',
+    t('Data'), t('Stato'), t('Sonno (ore)'), t('Qualità del sonno'), t('Stress'), t('Umore'), t('Acqua (bicchieri)'), t('Caffè'), t('Alcolici'), t('Pasto saltato'), t('Attività fisica'),
+    t('Mestruazioni'), t('Pressione media (hPa)'), t('Temperatura media (°C)'), t('Umidità media (%)'), t('Note'),
   ])];
-  const labels = { migraine: 'Emicrania', free: 'Senza emicrania (confermato)', assumed: 'Senza emicrania', unknown: 'Non registrato' };
+  const labels = {
+    migraine: t('Emicrania'), free: t('Senza emicrania (confermato)'), assumed: t('Senza emicrania'), unknown: t('Non registrato'),
+  };
   eachDay(idx.trackingStart, today).forEach((d) => {
     const rec = db.days[d] || {};
     const w = db.weather[d] || {};
     rows.push(csvLine([
       fmtD(d), labels[dayStatus(idx, db, d)] || '', fmtDec(rec.sleepH), rec.sleepQ ? SLEEP_QUALITY_LABELS[rec.sleepQ - 1] : '', rec.stress ? STRESS_LABELS[rec.stress - 1] : '',
-      rec.mood ? MOOD_LABELS[rec.mood - 1] : '', rec.water ?? '', rec.caffeine ?? '', rec.alcohol ?? '', rec.skippedMeal ? 'sì' : '', rec.exercise ? 'sì' : '',
-      rec.menses ? 'sì' : '', fmtDec(w.p == null ? null : Math.round(w.p * 10) / 10), fmtDec(w.t == null ? null : Math.round(w.t * 10) / 10), fmtDec(w.h == null ? null : Math.round(w.h)), rec.note || '',
+      rec.mood ? MOOD_LABELS[rec.mood - 1] : '', rec.water ?? '', rec.caffeine ?? '', rec.alcohol ?? '', rec.skippedMeal ? t('sì') : '', rec.exercise ? t('sì') : '',
+      rec.menses ? t('sì') : '', fmtDec(w.p == null ? null : Math.round(w.p * 10) / 10), fmtDec(w.t == null ? null : Math.round(w.t * 10) / 10), fmtDec(w.h == null ? null : Math.round(w.h)), rec.note || '',
     ]));
   });
   return csvFile(rows);
@@ -108,7 +116,8 @@ export async function exportCsv(kind) {
   const text = kind === 'days' ? daysCsv(db) : episodesCsv(db);
   const blob = new Blob([text], { type: 'text/csv;charset=utf-8' });
   const name = kind === 'days' ? 'giornate' : 'attacchi';
-  return shareFile({ blob, filename: `diario-emicrania-${name}-${todayStr()}.csv`, title: `Diario Emicrania - ${name}` });
+  const title = kind === 'days' ? t('Diario Emicrania - giornate') : t('Diario Emicrania - attacchi');
+  return shareFile({ blob, filename: `diario-emicrania-${name}-${todayStr()}.csv`, title }); // i18n-ignore
 }
 
 export function buildReminderIcs(time = '21:00', now = new Date()) {
@@ -117,34 +126,34 @@ export function buildReminderIcs(time = '21:00', now = new Date()) {
   const d = new Date(now);
   d.setDate(d.getDate() + 1);
   const day = `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}`;
-  const stamp = `${now.getUTCFullYear()}${pad(now.getUTCMonth() + 1)}${pad(now.getUTCDate())}T${pad(now.getUTCHours())}${pad(now.getUTCMinutes())}00Z`;
+  const stamp = `${now.getUTCFullYear()}${pad(now.getUTCMonth() + 1)}${pad(now.getUTCDate())}T${pad(now.getUTCHours())}${pad(now.getUTCMinutes())}00Z`; // i18n-ignore
   return [
-    'BEGIN:VCALENDAR',
-    'VERSION:2.0',
-    'PRODID:-//Diario Emicrania//IT',
-    'CALSCALE:GREGORIAN',
-    'BEGIN:VEVENT',
-    'UID:diario-emicrania-promemoria@app',
-    `DTSTAMP:${stamp}`,
-    `DTSTART:${day}T${hh}${mm}00`,
-    'DURATION:PT10M',
-    'RRULE:FREQ=DAILY',
-    'SUMMARY:Come stai oggi? Aggiorna il Diario Emicrania',
-    'DESCRIPTION:Registra la giornata nel diario dell\'emicrania.',
-    'BEGIN:VALARM',
-    'TRIGGER:PT0M',
-    'ACTION:DISPLAY',
-    'DESCRIPTION:Diario Emicrania: come stai oggi?',
-    'END:VALARM',
-    'END:VEVENT',
-    'END:VCALENDAR',
+    'BEGIN:VCALENDAR', // i18n-ignore
+    'VERSION:2.0', // i18n-ignore
+    'PRODID:-//Diario Emicrania//IT', // i18n-ignore
+    'CALSCALE:GREGORIAN', // i18n-ignore
+    'BEGIN:VEVENT', // i18n-ignore
+    'UID:diario-emicrania-promemoria@app', // i18n-ignore
+    `DTSTAMP:${stamp}`, // i18n-ignore
+    `DTSTART:${day}T${hh}${mm}00`, // i18n-ignore
+    'DURATION:PT10M', // i18n-ignore
+    'RRULE:FREQ=DAILY', // i18n-ignore
+    `SUMMARY:${icsText(t('Come stai oggi? Aggiorna il Diario Emicrania'))}`, // i18n-ignore
+    `DESCRIPTION:${icsText(t('Registra la giornata nel diario dell\'emicrania.'))}`, // i18n-ignore
+    'BEGIN:VALARM', // i18n-ignore
+    'TRIGGER:PT0M', // i18n-ignore
+    'ACTION:DISPLAY', // i18n-ignore
+    `DESCRIPTION:${icsText(t('Diario Emicrania: come stai oggi?'))}`, // i18n-ignore
+    'END:VALARM', // i18n-ignore
+    'END:VEVENT', // i18n-ignore
+    'END:VCALENDAR', // i18n-ignore
     '',
-  ].join('\r\n');
+  ].map(foldIcs).join('\r\n');
 }
 
 export async function exportReminder(time) {
   const blob = new Blob([buildReminderIcs(time)], { type: 'text/calendar' });
-  return shareFile({ blob, filename: 'promemoria-diario-emicrania.ics', title: 'Promemoria Diario Emicrania' });
+  return shareFile({ blob, filename: 'promemoria-diario-emicrania.ics', title: t('Promemoria Diario Emicrania') });
 }
 
 const icsText = (s) => String(s || '').replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\r?\n/g, '\\n');
@@ -167,25 +176,25 @@ export function buildEventIcs({
   uid, title, date = null, at = null, allDay = false, durationMin = 60, description = '', location = '', now = new Date(),
 }) {
   const pad = (n) => String(n).padStart(2, '0');
-  const stamp = `${now.getUTCFullYear()}${pad(now.getUTCMonth() + 1)}${pad(now.getUTCDate())}T${pad(now.getUTCHours())}${pad(now.getUTCMinutes())}00Z`;
-  const lines = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Diario Emicrania//IT', 'CALSCALE:GREGORIAN', 'BEGIN:VEVENT', `UID:${String(uid).replace(/[^\w.-]/g, '')}@diario-emicrania`, `DTSTAMP:${stamp}`];
+  const stamp = `${now.getUTCFullYear()}${pad(now.getUTCMonth() + 1)}${pad(now.getUTCDate())}T${pad(now.getUTCHours())}${pad(now.getUTCMinutes())}00Z`; // i18n-ignore
+  const lines = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Diario Emicrania//IT', 'CALSCALE:GREGORIAN', 'BEGIN:VEVENT', `UID:${String(uid).replace(/[^\w.-]/g, '')}@diario-emicrania`, `DTSTAMP:${stamp}`]; // i18n-ignore
   if (allDay || !at) {
     const d = (date || at).slice(0, 10);
     const next = new Date(Number(d.slice(0, 4)), Number(d.slice(5, 7)) - 1, Number(d.slice(8, 10)) + 1);
-    lines.push(`DTSTART;VALUE=DATE:${d.replace(/-/g, '')}`, `DTEND;VALUE=DATE:${next.getFullYear()}${pad(next.getMonth() + 1)}${pad(next.getDate())}`);
+    lines.push(`DTSTART;VALUE=DATE:${d.replace(/-/g, '')}`, `DTEND;VALUE=DATE:${next.getFullYear()}${pad(next.getMonth() + 1)}${pad(next.getDate())}`); // i18n-ignore
   } else {
-    lines.push(`DTSTART:${at.slice(0, 10).replace(/-/g, '')}T${at.slice(11, 13)}${at.slice(14, 16)}00`, `DURATION:PT${Math.max(5, Math.round(durationMin))}M`);
+    lines.push(`DTSTART:${at.slice(0, 10).replace(/-/g, '')}T${at.slice(11, 13)}${at.slice(14, 16)}00`, `DURATION:PT${Math.max(5, Math.round(durationMin))}M`); // i18n-ignore
   }
-  lines.push(`SUMMARY:${icsText(title)}`);
-  if (description) lines.push(`DESCRIPTION:${icsText(description)}`);
-  if (location) lines.push(`LOCATION:${icsText(location)}`);
-  lines.push('BEGIN:VALARM', allDay || !at ? 'TRIGGER:-PT15H' : 'TRIGGER:-PT2H', 'ACTION:DISPLAY', `DESCRIPTION:${icsText(title)}`, 'END:VALARM', 'END:VEVENT', 'END:VCALENDAR', '');
+  lines.push(`SUMMARY:${icsText(title)}`); // i18n-ignore
+  if (description) lines.push(`DESCRIPTION:${icsText(description)}`); // i18n-ignore
+  if (location) lines.push(`LOCATION:${icsText(location)}`); // i18n-ignore
+  lines.push('BEGIN:VALARM', allDay || !at ? 'TRIGGER:-PT15H' : 'TRIGGER:-PT2H', 'ACTION:DISPLAY', `DESCRIPTION:${icsText(title)}`, 'END:VALARM', 'END:VEVENT', 'END:VCALENDAR', ''); // i18n-ignore
   return lines.map(foldIcs).join('\r\n');
 }
 
 export async function exportEventIcs(opts) {
   const blob = new Blob([buildEventIcs(opts)], { type: 'text/calendar' });
   const r = await shareFile({ blob, filename: 'evento-diario-emicrania.ics', title: opts.title });
-  if (r === 'shared') toast('Scegli «Calendario» per aggiungerlo');
+  if (r === 'shared') toast(t('Scegli «Calendario» per aggiungerlo'));
   return r;
 }

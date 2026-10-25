@@ -2,6 +2,8 @@ import { h } from './dom.js';
 import { icon } from './icons.js';
 import * as store from './store.js';
 import { toast, overlayCount } from './ui.js';
+import { APP_NAME } from './data.js';
+import { t } from './i18n.js';
 
 const enc = new TextEncoder();
 const toB64 = (buf) => btoa(String.fromCharCode(...new Uint8Array(buf)));
@@ -11,8 +13,8 @@ const ITERATIONS = 150000;
 export const pinSupported = () => !!(window.crypto && window.crypto.subtle);
 
 async function derive(pin, salt, iter) {
-  const key = await crypto.subtle.importKey('raw', enc.encode(pin), 'PBKDF2', false, ['deriveBits']);
-  return crypto.subtle.deriveBits({ name: 'PBKDF2', hash: 'SHA-256', salt, iterations: iter }, key, 256);
+  const key = await crypto.subtle.importKey('raw', enc.encode(pin), 'PBKDF2', false, ['deriveBits']); // i18n-ignore
+  return crypto.subtle.deriveBits({ name: 'PBKDF2', hash: 'SHA-256', salt, iterations: iter }, key, 256); // i18n-ignore
 }
 
 export async function makePinRecord(pin) {
@@ -61,7 +63,7 @@ function confirmInLock(host, { title, message, confirmLabel }) {
         h('h2', { class: 'dlg-title' }, title),
         h('p', { class: 'dlg-msg' }, message),
         h('div', { class: 'dlg-actions' },
-          h('button', { type: 'button', class: 'dlg-btn', onclick: () => done(false) }, 'Annulla'),
+          h('button', { type: 'button', class: 'dlg-btn', onclick: () => done(false) }, t('Annulla')),
           h('button', { type: 'button', class: 'dlg-btn danger', onclick: () => done(true) }, confirmLabel)),
       ),
     );
@@ -124,13 +126,13 @@ export function askPin({
             clearInterval(countdown);
             msg.textContent = subtitle;
           } else {
-            msg.textContent = `Troppi tentativi. Riprova tra ${left} s`;
+            msg.textContent = t('Troppi tentativi. Riprova tra {secondi} s', { secondi: left });
           }
         };
         tick();
         countdown = setInterval(tick, 500);
       } else {
-        msg.textContent = 'PIN errato, riprova';
+        msg.textContent = t('PIN errato, riprova');
       }
     };
 
@@ -147,18 +149,18 @@ export function askPin({
 
     function onKey(e) {
       if (/^\d$/.test(e.key)) press(e.key);
-      else if (e.key === 'Backspace') press('del');
-      else if (e.key === 'Escape' && cancelable) finish(null);
+      else if (e.key === 'Backspace') press('del'); // i18n-ignore
+      else if (e.key === 'Escape' && cancelable) finish(null); // i18n-ignore
     }
 
     const pad = h('div', { class: 'pin-pad' }, KEYS.map((k) => {
       if (k === '') return h('span', { class: 'pin-key blank' });
       return h('button', {
-        type: 'button', class: 'pin-key', 'aria-label': k === 'del' ? 'Cancella' : k, onclick: () => press(k),
+        type: 'button', class: 'pin-key', 'aria-label': k === 'del' ? t('Cancella') : k, onclick: () => press(k),
       }, k === 'del' ? icon('backspace', 26) : k);
     }));
     const links = [];
-    if (cancelable) links.push(h('button', { type: 'button', class: 'pin-link', onclick: () => finish(null) }, 'Annulla'));
+    if (cancelable) links.push(h('button', { type: 'button', class: 'pin-link', onclick: () => finish(null) }, t('Annulla')));
     if (forgot) {
       links.push(h('button', {
         type: 'button',
@@ -166,7 +168,7 @@ export function askPin({
         onclick: async () => {
           if (await forgot(el)) finish(null);
         },
-      }, 'PIN dimenticato?'));
+      }, t('PIN dimenticato?')));
     }
     const el = h('div', { class: 'lock', role: 'dialog', 'aria-modal': 'true', 'aria-label': title }, icon('lock', 34), h('h1', {}, title), msg, dots, pad, h('div', { class: 'flex', style: { gap: '24px' } }, links));
     document.body.appendChild(el);
@@ -184,20 +186,20 @@ export async function lockNow() {
   if (!rec || locked) return;
   locked = true;
   await askPin({
-    title: 'Diario Emicrania',
-    subtitle: 'Inserisci il PIN',
+    title: APP_NAME,
+    subtitle: t('Inserisci il PIN'),
     len: rec.len || 4,
     cancelable: false,
     verify: (p) => checkPin(p, rec),
     forgot: async (host) => {
       const ok = await confirmInLock(host, {
-        title: 'Cancellare tutti i dati?',
-        message: 'Per reimpostare il PIN l’app deve cancellare tutti i dati salvati su questo telefono. Potrai ripristinarli solo da un backup.',
-        confirmLabel: 'Cancella tutto',
+        title: t('Cancellare tutti i dati?'),
+        message: t('Per reimpostare il PIN l’app deve cancellare tutti i dati salvati su questo telefono. Potrai ripristinarli solo da un backup.'),
+        confirmLabel: t('Cancella tutto'),
       });
       if (!ok) return false;
       store.wipeAll();
-      toast('Dati cancellati. L’app è di nuovo vuota.');
+      toast(t('Dati cancellati. L’app è di nuovo vuota.'));
       return true;
     },
   });
@@ -231,15 +233,15 @@ export function initLock() {
 
 export async function setupPin(len = 4) {
   if (!pinSupported()) {
-    toast('Questo browser non supporta il blocco con PIN.', { tone: 'error' });
+    toast(t('Questo browser non supporta il blocco con PIN.'), { tone: 'error' });
     return false;
   }
-  const first = await askPin({ title: 'Scegli un PIN', subtitle: `${len} cifre`, len });
+  const first = await askPin({ title: t('Scegli un PIN'), subtitle: t('{n, plural, one {# cifra} other {# cifre}}', { n: len }), len });
   if (!first) return false;
-  const second = await askPin({ title: 'Conferma il PIN', subtitle: 'Reinseriscilo', len });
+  const second = await askPin({ title: t('Conferma il PIN'), subtitle: t('Reinseriscilo'), len });
   if (!second) return false;
   if (first !== second) {
-    toast('I due PIN non coincidono. Riprova.', { tone: 'error' });
+    toast(t('I due PIN non coincidono. Riprova.'), { tone: 'error' });
     return false;
   }
   store.updateSettings({ pin: await makePinRecord(first) });
@@ -250,7 +252,7 @@ export async function removePin() {
   const rec = store.getSettings().pin;
   if (!rec) return true;
   const entered = await askPin({
-    title: 'Disattiva il blocco', subtitle: 'Inserisci il PIN attuale', len: rec.len || 4, verify: (p) => checkPin(p, rec),
+    title: t('Disattiva il blocco'), subtitle: t('Inserisci il PIN attuale'), len: rec.len || 4, verify: (p) => checkPin(p, rec),
   });
   if (!entered) return false;
   store.updateSettings({ pin: null });

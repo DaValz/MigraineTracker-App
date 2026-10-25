@@ -4,6 +4,7 @@ import { h, replaceChildren } from './dom.js';
 import {
   openSheet, row, group, button, toast,
 } from './ui.js';
+import { t, locale } from './i18n.js';
 
 const FORECAST = 'https://api.open-meteo.com/v1/forecast';
 const ARCHIVE = 'https://archive-api.open-meteo.com/v1/archive';
@@ -15,7 +16,7 @@ async function fetchJson(url, timeoutMs = 12000) {
   const timer = setTimeout(() => ctrl.abort(), timeoutMs);
   try {
     const res = await fetch(url, { signal: ctrl.signal, credentials: 'omit', referrerPolicy: 'no-referrer' });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`); // i18n-ignore
     return await res.json();
   } finally {
     clearTimeout(timer);
@@ -73,18 +74,18 @@ export async function syncWeather({ force = false } = {}) {
     if (!need.length) return { skipped: true };
     lastSync = Date.now();
     const { lat, lon } = s.weatherLoc;
-    const base = `latitude=${lat}&longitude=${lon}&hourly=${HOURLY}&timezone=auto`;
+    const base = `latitude=${lat}&longitude=${lon}&hourly=${HOURLY}&timezone=auto`; // i18n-ignore
     const minNeed = need[0];
     const splitDay = addDays(today, -85);
     const entries = {};
     if (minNeed < splitDay) {
       const olderEnd = addDays(splitDay, -1);
-      const data = await fetchJson(`${ARCHIVE}?${base}&start_date=${minNeed}&end_date=${olderEnd}`);
+      const data = await fetchJson(`${ARCHIVE}?${base}&start_date=${minNeed}&end_date=${olderEnd}`); // i18n-ignore
       Object.assign(entries, aggregate(data.hourly, today));
     }
     const recentFrom = minNeed < splitDay ? splitDay : minNeed;
     const past = Math.min(92, diffDays(recentFrom, today) + 1);
-    const data = await fetchJson(`${FORECAST}?${base}&past_days=${past}&forecast_days=1`);
+    const data = await fetchJson(`${FORECAST}?${base}&past_days=${past}&forecast_days=1`); // i18n-ignore
     Object.assign(entries, aggregate(data.hourly, today));
     store.setWeather(entries);
     return { ok: true, days: Object.keys(entries).length };
@@ -101,7 +102,7 @@ export function maybeSyncWeather(force = false) {
 }
 
 export async function searchCity(name) {
-  const data = await fetchJson(`${GEOCODE}?name=${encodeURIComponent(name)}&count=6&language=it&format=json`);
+  const data = await fetchJson(`${GEOCODE}?name=${encodeURIComponent(name)}&count=6&language=${locale.slice(0, 2)}&format=json`); // i18n-ignore
   return (data.results || []).map((r) => ({
     name: r.name, admin: r.admin1 || '', country: r.country || '', lat: r.latitude, lon: r.longitude,
   }));
@@ -110,7 +111,7 @@ export async function searchCity(name) {
 function currentPosition() {
   return new Promise((resolve, reject) => {
     if (!navigator.geolocation) {
-      reject(new Error('Geolocalizzazione non disponibile'));
+      reject(new Error(t('Geolocalizzazione non disponibile')));
       return;
     }
     navigator.geolocation.getCurrentPosition(
@@ -122,31 +123,31 @@ function currentPosition() {
 }
 
 export function describeLocation(loc) {
-  if (!loc) return 'Non impostata';
+  if (!loc) return t('Non impostata');
   return loc.name || `${loc.lat.toFixed(2)}, ${loc.lon.toFixed(2)}`;
 }
 
 export function openLocationSheet({ onDone } = {}) {
-  const sheet = openSheet({ title: 'Posizione per il meteo', tall: true });
+  const sheet = openSheet({ title: t('Posizione per il meteo'), tall: true });
   const input = h('input', {
-    class: 'input', type: 'search', placeholder: 'Cerca una città…', 'aria-label': 'Cerca una città', autocomplete: 'off', maxlength: 60,
+    class: 'input', type: 'search', placeholder: t('Cerca una città…'), 'aria-label': t('Cerca una città'), autocomplete: 'off', maxlength: 60,
   });
   const results = h('div', { class: 'mt' });
   const status = h('p', { class: 'muted small mt' });
   const choose = (loc) => {
     store.updateSettings({ weatherLoc: loc, weatherOn: true });
     maybeSyncWeather(true);
-    toast('Posizione salvata. Scarico i dati meteo…');
+    toast(t('Posizione salvata. Scarico i dati meteo…'));
     sheet.close();
     if (onDone) onDone();
   };
   const doSearch = async () => {
     const q = input.value.trim();
     if (q.length < 2) return;
-    replaceChildren(status, 'Ricerca in corso…');
+    replaceChildren(status, t('Ricerca in corso…'));
     try {
       const list = await searchCity(q);
-      replaceChildren(status, list.length ? '' : 'Nessuna città trovata.');
+      replaceChildren(status, list.length ? '' : t('Nessuna città trovata.'));
       replaceChildren(results, group(...list.map((r) => row({
         icon: 'pin',
         title: r.name,
@@ -154,36 +155,36 @@ export function openLocationSheet({ onDone } = {}) {
         onClick: () => choose({ lat: r.lat, lon: r.lon, name: [r.name, r.admin].filter(Boolean).join(', ') }),
       }))));
     } catch (e) {
-      replaceChildren(status, 'Impossibile cercare: controlla la connessione.');
+      replaceChildren(status, t('Impossibile cercare: controlla la connessione.'));
     }
   };
   input.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') {
+    if (e.key === 'Enter') { // i18n-ignore
       e.preventDefault();
       doSearch();
     }
   });
   replaceChildren(
     sheet.body,
-    h('p', { class: 'muted small mb' }, 'Il meteo viene scaricato da Open-Meteo (servizio gratuito). Viene inviata solo la posizione approssimata (circa 1 km) e le date, mai i dati sulla tua salute.'),
+    h('p', { class: 'muted small mb' }, t('Il meteo viene scaricato da Open-Meteo (servizio gratuito). Viene inviata solo la posizione approssimata (circa 1 km) e le date, mai i dati sulla tua salute.')),
     button({
-      label: 'Usa la mia posizione',
+      label: t('Usa la mia posizione'),
       kind: 'secondary',
       icon: 'pin',
       block: true,
       onClick: async () => {
-        replaceChildren(status, 'Rilevo la posizione…');
+        replaceChildren(status, t('Rilevo la posizione…'));
         try {
           const pos = await currentPosition();
           choose({ lat: pos.lat, lon: pos.lon, name: '' });
         } catch (e) {
-          replaceChildren(status, 'Non riesco a leggere la posizione. Cerca la tua città qui sotto.');
+          replaceChildren(status, t('Non riesco a leggere la posizione. Cerca la tua città qui sotto.'));
         }
       },
     }),
-    h('div', { class: 'field-label mt' }, 'Oppure cerca la città'),
+    h('div', { class: 'field-label mt' }, t('Oppure cerca la città')),
     input,
-    button({ label: 'Cerca', kind: 'primary', block: true, onClick: doSearch }),
+    button({ label: t('Cerca'), kind: 'primary', block: true, onClick: doSearch }),
     status,
     results,
   );

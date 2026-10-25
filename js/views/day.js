@@ -7,6 +7,8 @@ import {
   MOOD_FACES, SLEEP_QUALITY_LABELS, STRESS_LABELS, MOOD_LABELS,
 } from '../data.js';
 import { fmtDateLong, todayStr } from '../dates.js';
+import { num } from '../format.js';
+import { t } from '../i18n.js';
 import { getIndex, dayStatus } from '../analysis.js';
 import { episodeCard, describeCheckin } from './shared.js';
 import { openEpisodeEditor } from './episode.js';
@@ -34,8 +36,8 @@ export function openCheckin(date, { onSaved } = {}) {
     menses: !!rec.menses,
     note: rec.note || '',
   };
-  const saveBtn = h('button', { type: 'button', class: 'bar-btn solid' }, 'Salva');
-  const page = openPage({ title: 'Giornata', backLabel: 'Annulla', right: saveBtn });
+  const saveBtn = h('button', { type: 'button', class: 'bar-btn solid' }, t('Salva'));
+  const page = openPage({ title: t('Giornata'), backLabel: t('Annulla'), right: saveBtn });
 
   const numChips = (labels, key) => chipGroup({
     options: labels.map((l, i) => ({ value: i + 1, label: l })),
@@ -46,25 +48,25 @@ export function openCheckin(date, { onSaved } = {}) {
   const parts = [h('p', { class: 'muted mb', style: { fontWeight: '600' } }, fmtDateLong(date))];
   if (!hasEpisode) {
     parts.push(group(toggleRow({
-      icon: 'sun', tone: 'green', title: 'Nessuna emicrania in questa giornata', checked: draft.free, onChange: (v) => { draft.free = v; },
+      icon: 'sun', tone: 'green', title: t('Nessuna emicrania in questa giornata'), checked: draft.free, onChange: (v) => { draft.free = v; },
     })));
   }
   parts.push(
     card(
-      cardTitle('Sonno'),
+      cardTitle(t('Sonno')),
       field({
-        label: 'Ore dormite stanotte',
+        label: t('Ore dormite stanotte'),
         control: stepper({
-          value: draft.sleepH, min: 0, max: 14, step: 0.5, start: 7, unit: 'ore', label: 'ore di sonno', format: (v) => String(v).replace('.', ','), onChange: (v) => { draft.sleepH = v; },
+          value: draft.sleepH, min: 0, max: 14, step: 0.5, start: 7, unit: t('ore'), label: t('ore di sonno'), format: (v) => num(v, 2), onChange: (v) => { draft.sleepH = v; },
         }),
       }),
-      field({ label: 'Qualità del sonno', control: numChips(SLEEP_QUALITY_LABELS, 'sleepQ') }),
+      field({ label: t('Qualità del sonno'), control: numChips(SLEEP_QUALITY_LABELS, 'sleepQ') }),
     ),
     card(
-      cardTitle('Stress e umore'),
-      field({ label: 'Livello di stress', control: numChips(STRESS_LABELS, 'stress') }),
+      cardTitle(t('Stress e umore')),
+      field({ label: t('Livello di stress'), control: numChips(STRESS_LABELS, 'stress') }),
       field({
-        label: 'Umore',
+        label: t('Umore'),
         control: chipGroup({
           options: MOOD_FACES.map((f, i) => ({ value: i + 1, label: `${f} ${MOOD_LABELS[i]}` })),
           value: draft.mood,
@@ -73,24 +75,24 @@ export function openCheckin(date, { onSaved } = {}) {
       }),
     ),
     card(
-      cardTitle('Abitudini'),
-      field({ label: 'Acqua (bicchieri)', control: stepper({ value: draft.water, min: 0, max: 20, start: 1, label: 'bicchieri d’acqua', onChange: (v) => { draft.water = v; } }) }),
-      field({ label: 'Caffè (tazzine)', control: stepper({ value: draft.caffeine, min: 0, max: 15, start: 1, label: 'tazzine di caffè', onChange: (v) => { draft.caffeine = v; } }) }),
-      field({ label: 'Alcolici (bicchieri)', control: stepper({ value: draft.alcohol, min: 0, max: 15, start: 1, label: 'bicchieri di alcolici', onChange: (v) => { draft.alcohol = v; } }) }),
+      cardTitle(t('Abitudini')),
+      field({ label: t('Acqua (bicchieri)'), control: stepper({ value: draft.water, min: 0, max: 20, start: 1, label: t('bicchieri d’acqua'), onChange: (v) => { draft.water = v; } }) }),
+      field({ label: t('Caffè (tazzine)'), control: stepper({ value: draft.caffeine, min: 0, max: 15, start: 1, label: t('tazzine di caffè'), onChange: (v) => { draft.caffeine = v; } }) }),
+      field({ label: t('Alcolici (bicchieri)'), control: stepper({ value: draft.alcohol, min: 0, max: 15, start: 1, label: t('bicchieri di alcolici'), onChange: (v) => { draft.alcohol = v; } }) }),
     ),
     group(
-      toggleRow({ icon: 'clock', tone: 'orange', title: 'Ho saltato un pasto', checked: draft.skippedMeal, onChange: (v) => { draft.skippedMeal = v; } }),
-      toggleRow({ icon: 'activity', tone: 'blue', title: 'Attività fisica', checked: draft.exercise, onChange: (v) => { draft.exercise = v; } }),
-      store.getSettings().cycle ? toggleRow({ icon: 'drop', tone: 'red', title: 'Mestruazioni', checked: draft.menses, onChange: (v) => { draft.menses = v; } }) : null,
+      toggleRow({ icon: 'clock', tone: 'orange', title: t('Ho saltato un pasto'), checked: draft.skippedMeal, onChange: (v) => { draft.skippedMeal = v; } }),
+      toggleRow({ icon: 'activity', tone: 'blue', title: t('Attività fisica'), checked: draft.exercise, onChange: (v) => { draft.exercise = v; } }),
+      store.getSettings().cycle ? toggleRow({ icon: 'drop', tone: 'red', title: t('Mestruazioni'), checked: draft.menses, onChange: (v) => { draft.menses = v; } }) : null,
     ),
-    card(cardTitle('Note della giornata'), textArea({ value: draft.note, placeholder: 'Qualcosa di importante da ricordare…', label: 'Note della giornata', onInput: (v) => { draft.note = v; } })),
+    card(cardTitle(t('Note della giornata')), textArea({ value: draft.note, placeholder: t('Qualcosa di importante da ricordare…'), label: t('Note della giornata'), onInput: (v) => { draft.note = v; } })),
   );
   replaceChildren(page.body, ...parts);
 
   saveBtn.addEventListener('click', () => {
     store.patchDay(date, { ...draft, free: hasEpisode ? false : draft.free, checkin: true });
     page.close();
-    toast('Giornata salvata');
+    toast(t('Giornata salvata'));
     if (onSaved) onSaved();
   });
   return page;
@@ -110,32 +112,32 @@ export function openDaySheet(date) {
     if (status === 'migraine') {
       nodes.push(...eps.map((ep) => episodeCard(ep, { onClick: () => openEpisodeEditor({ id: ep.id }) })));
     } else if (status === 'free') {
-      nodes.push(alertBox({ tone: 'good', icon: 'check-circle', title: 'Nessuna emicrania', text: 'Hai segnato questa giornata come libera da mal di testa.' }));
+      nodes.push(alertBox({ tone: 'good', icon: 'check-circle', title: t('Nessuna emicrania'), text: t('Hai segnato questa giornata come libera da mal di testa.') }));
     } else if (isFuture) {
-      nodes.push(alertBox({ tone: 'info', icon: 'calendar', text: 'Questo giorno non è ancora arrivato.' }));
+      nodes.push(alertBox({ tone: 'info', icon: 'calendar', text: t('Questo giorno non è ancora arrivato.') }));
     } else if (status === 'assumed') {
-      nodes.push(alertBox({ tone: 'info', icon: 'info', text: 'Nessun attacco registrato: il giorno conta come senza emicrania. Puoi confermarlo con il pulsante qui sotto.' }));
+      nodes.push(alertBox({ tone: 'info', icon: 'info', text: t('Nessun attacco registrato: il giorno conta come senza emicrania. Puoi confermarlo con il pulsante qui sotto.') }));
     } else {
-      nodes.push(alertBox({ tone: 'info', icon: 'info', text: 'Nessuna registrazione per questo giorno.' }));
+      nodes.push(alertBox({ tone: 'info', icon: 'info', text: t('Nessuna registrazione per questo giorno.') }));
     }
 
     const actions = [];
     if (!isFuture) {
-      actions.push(button({ label: status === 'migraine' ? 'Aggiungi un altro attacco' : 'Registra un attacco', kind: 'primary', icon: 'plus', block: true, onClick: () => openEpisodeEditor({ date }) }));
+      actions.push(button({ label: status === 'migraine' ? t('Aggiungi un altro attacco') : t('Registra un attacco'), kind: 'primary', icon: 'plus', block: true, onClick: () => openEpisodeEditor({ date }) }));
       if (status !== 'migraine') {
         actions.push(button({
-          label: status === 'free' ? 'Rimuovi conferma' : 'Conferma: nessuna emicrania',
+          label: status === 'free' ? t('Rimuovi conferma') : t('Conferma: nessuna emicrania'),
           kind: 'secondary',
           icon: status === 'free' ? 'x' : 'check',
           block: true,
           onClick: () => {
             store.setFree(date, status !== 'free');
-            toast(status === 'free' ? 'Conferma rimossa' : 'Giornata senza emicrania registrata');
+            toast(status === 'free' ? t('Conferma rimossa') : t('Giornata senza emicrania registrata'));
           },
         }));
       }
       actions.push(button({
-        label: db.days[date] && db.days[date].checkin ? 'Modifica dettagli della giornata' : 'Dettagli della giornata (sonno, stress…)',
+        label: db.days[date] && db.days[date].checkin ? t('Modifica dettagli della giornata') : t('Dettagli della giornata (sonno, stress…)'),
         kind: 'ghost',
         icon: 'edit',
         block: true,
@@ -147,14 +149,14 @@ export function openDaySheet(date) {
     const facts = describeCheckin(db.days[date], LABELS);
     const w = db.weather[date];
     if (w) {
-      const parts = [`Pressione ${Math.round(w.p)} hPa`];
+      const parts = [t('Pressione {valore} hPa', { valore: Math.round(w.p) })];
       if (w.t != null) parts.push(`${Math.round(w.t)} °C`);
-      if (w.h != null) parts.push(`umidità ${Math.round(w.h)}%`);
+      if (w.h != null) parts.push(t('umidità {valore}%', { valore: Math.round(w.h) }));
       facts.push(parts.join(' · '));
     }
     if (facts.length || (db.days[date] && db.days[date].note)) {
       nodes.push(card(
-        cardTitle('La giornata'),
+        cardTitle(t('La giornata')),
         facts.length ? h('div', { class: 'chips' }, facts.map((f) => h('span', { class: 'pill' }, f))) : null,
         db.days[date] && db.days[date].note ? h('p', { class: 'muted', style: { marginTop: '10px', whiteSpace: 'pre-wrap' } }, db.days[date].note) : null,
       ));

@@ -1,0 +1,272 @@
+[
+  {
+    "name": "dagboek met jaar- en maandkoppen",
+    "lines": [
+      "Migraine dagboek",
+      "2025",
+      "3-3 sterke migraine 8/10, linkerkant, misselijkheid en lichtgevoeligheid (ibuprofen 600 heeft niet geholpen)",
+      "4-3 idem",
+      "5-3 lichte pijn op het voorhoofd",
+      "6-3",
+      "12-13/3 pijn in de slapen en in de nek, ongesteld geworden",
+      "Begin april",
+      "2-4 's ochtends, rechterkant, visuele aura, sumatriptan genomen",
+      "(daarna beter)",
+      "2024",
+      "03-01-2024 wakker geworden met zeer sterke pijn achter het rechteroog",
+      "4-1 lichte pijn"
+    ],
+    "count": 8,
+    "order": "dmy",
+    "firstDate": "2024-01-03",
+    "lastDate": "2025-04-02",
+    "expect": [
+      { "date": "2025-03-03", "intensity": 8, "side": "sx", "symptoms": ["Nausea", "Sensibilità alla luce"], "meds": [{ "name": "Ibuprofene", "count": 1, "dose": "600 mg", "effect": 0 }] },
+      { "date": "2025-03-04", "intensity": 8, "side": "sx", "flags": { "ditto": true } },
+      { "date": "2025-03-05", "intensity": 2, "areas": ["Fronte"] },
+      { "date": "2025-03-06", "flags": { "noDetails": true } },
+      { "date": "2025-03-12", "endDate": "2025-03-13", "areasHas": ["Tempie", "Nuca"], "menses": true, "mensesToday": true },
+      { "date": "2025-04-02", "side": "dx", "aura": ["Visiva (luci, zig-zag, macchie)"], "type": "con_aura", "meds": [{ "name": "Sumatriptan" }] },
+      { "date": "2024-01-03", "intensity": 8, "side": "dx", "areas": ["Dietro un occhio"] },
+      { "date": "2024-01-04", "intensity": 2 }
+    ]
+  },
+  {
+    "name": "maanden als kop en alleen de dag in de regels",
+    "lines": [
+      "Juni 2024",
+      "26 sterke migraine, ibuprofen",
+      "27 geen pijn, alles goed",
+      "28 lichte pijn",
+      "Juli",
+      "3 kloppend links, misselijk",
+      "2 ibuprofen voor sterke pijn"
+    ],
+    "count": 4,
+    "expect": [
+      { "date": "2024-06-26", "intensity": 7, "meds": [{ "name": "Ibuprofene" }] },
+      { "date": "2024-06-27", "kind": "free" },
+      { "date": "2024-06-28", "intensity": 2 },
+      { "date": "2024-07-03", "side": "sx", "qualityHas": ["Pulsante"], "symptomsHas": ["Nausea"], "meds": [{ "name": "Ibuprofene", "count": 2 }] }
+    ]
+  },
+  {
+    "name": "zonder jaar: afgeleid uit de volgorde en de datum van vandaag",
+    "today": "2026-10-25",
+    "lines": ["12-10 sterk", "14-10 ibuprofen", "2-11 lichte pijn", "5-1 sterk", "23-10 draaglijk"],
+    "count": 5,
+    "expect": [
+      { "date": "2025-10-12", "intensity": 7 },
+      { "date": "2025-10-14", "meds": [{ "name": "Ibuprofene" }] },
+      { "date": "2025-11-02", "intensity": 2 },
+      { "date": "2026-01-05", "intensity": 7 },
+      { "date": "2026-10-23", "intensity": 4 }
+    ]
+  },
+  {
+    "name": "datums in verschillende vormen",
+    "lines": [
+      "26-06-24 sterk",
+      "- 27.06.2024 lichte pijn",
+      "• 28/6/2024 ibuprofen",
+      "1. 29 juni 2024 kloppend",
+      "Zondag 30 juni 2024: links",
+      "2024-07-01 rechts",
+      "van 3 t/m 5 juli 2024 migraine gedurende 3 dagen",
+      "7 jul. 2024 misselijk",
+      "3e augustus 2024 sterk",
+      "5 aug sterk",
+      "Maandag 12 augustus: hevige pijn"
+    ],
+    "count": 11,
+    "expect": [
+      { "date": "2024-06-26", "intensity": 7 },
+      { "date": "2024-06-27", "intensity": 2 },
+      { "date": "2024-06-28", "meds": [{ "name": "Ibuprofene" }] },
+      { "date": "2024-06-29", "qualityHas": ["Pulsante"] },
+      { "date": "2024-06-30", "side": "sx" },
+      { "date": "2024-07-01", "side": "dx" },
+      { "date": "2024-07-03", "endDate": "2024-07-05" },
+      { "date": "2024-07-07", "symptomsHas": ["Nausea"] },
+      { "date": "2024-08-03", "intensity": 7 },
+      { "date": "2024-08-05", "intensity": 7 },
+      { "date": "2024-08-12", "intensity": 7 }
+    ]
+  },
+  {
+    "name": "rangtelwoorden, afkortingen met punt en weekdagen",
+    "lines": [
+      "December 2024",
+      "1ste sterke migraine, linkerkant",
+      "2 idem",
+      "15 dec. pijn achter het linkeroog, misselijk",
+      "Januari 2025",
+      "3 jan. lichte pijn",
+      "Woensdag 8 januari: aanval hevig, paracetamol 1000 genomen, na 2 uur verlichting"
+    ],
+    "count": 5,
+    "expect": [
+      { "date": "2024-12-01", "intensity": 7, "side": "sx" },
+      { "date": "2024-12-02", "intensity": 7, "side": "sx", "flags": { "ditto": true } },
+      { "date": "2024-12-15", "areas": ["Dietro un occhio"], "side": "sx", "symptomsHas": ["Nausea"] },
+      { "date": "2025-01-03", "intensity": 2 },
+      { "date": "2025-01-08", "intensity": 7, "meds": [{ "name": "Paracetamolo", "dose": "1000 mg", "effect": 2 }] }
+    ]
+  },
+  {
+    "name": "medicijnen: aantallen, doses, effect en namen buiten de catalogus",
+    "lines": [
+      "2025",
+      "1-2 2 ibuprofen en een triptan genomen",
+      "2-2 voorhoofd (ibuprofen)x2 niet geholpen",
+      "3-2 paracetamol 1000 heeft goed geholpen",
+      "4-2 imigran 100 zonder effect, daarna ibuprofen genomen",
+      "5-2 nam Zalexil 20 mg",
+      "6-2 paracetamol, geen effect",
+      "7-2 kou gevat, zwaar hoofd",
+      "8-2 twee tabletten ibuprofen en perdolan",
+      "9-2 nam een Zalexil en een aspirine"
+    ],
+    "count": 9,
+    "expect": [
+      { "meds": [{ "name": "Ibuprofene", "count": 2 }, { "name": "Triptano", "count": 1 }] },
+      { "meds": [{ "name": "Ibuprofene", "count": 2, "effect": 0 }], "areas": ["Fronte"] },
+      { "meds": [{ "name": "Paracetamolo", "dose": "1000 mg", "effect": 2 }] },
+      { "meds": [{ "name": "Sumatriptan", "dose": "100 mg", "effect": 0 }, { "name": "Ibuprofene", "effect": null }] },
+      { "meds": [{ "name": "Zalexil", "dose": "20 mg" }] },
+      { "meds": [{ "name": "Paracetamolo", "effect": 0 }] },
+      { "meds": [], "triggersHas": ["Freddo"], "qualityHas": ["Pressante / a cerchio"] },
+      { "meds": [{ "name": "Ibuprofene", "count": 2 }, { "name": "Paracetamolo" }] },
+      { "meds": [{ "name": "Zalexil" }, { "name": "Acido acetilsalicilico" }] }
+    ]
+  },
+  {
+    "name": "uitlokkers, symptomen, ontkenningen en menstruatie",
+    "lines": [
+      "2025",
+      "10-5 slecht geslapen, stress, misselijk en overgegeven",
+      "11-5 niet misselijk, na de koffie",
+      "12-5 zonder koffie, hoofdpijn vanuit de nek",
+      "13-5 (morgen ongesteld) voorhoofd",
+      "14-5 eerste dag van mijn menstruatie, sterk",
+      "15-5 licht- en geluidsgevoelig, hitte"
+    ],
+    "count": 6,
+    "expect": [
+      { "triggers": ["Poco sonno", "Stress"], "symptoms": ["Nausea", "Vomito"] },
+      { "symptoms": [], "triggers": ["Caffeina"] },
+      { "triggers": ["Astinenza da caffeina"], "areasHas": ["Nuca"] },
+      { "menses": true, "mensesToday": false, "triggersHas": ["Ciclo mestruale"] },
+      { "menses": true, "mensesToday": true, "intensity": 7 },
+      { "symptoms": ["Sensibilità alla luce", "Sensibilità ai rumori"], "triggers": ["Caldo"] }
+    ]
+  },
+  {
+    "name": "aura, pijnzijde en spoedeisende hulp",
+    "lines": [
+      "2025",
+      "20-6 visuele aura rechts, pijn links, triptan genomen",
+      "21-6 geen pijn maar visuele stoornissen en tintelingen in de rechterhand, naar de spoedeisende hulp geweest",
+      "22-6 zonder aura, rechterslaap"
+    ],
+    "count": 3,
+    "expect": [
+      { "side": "sx", "aura": ["Visiva (luci, zig-zag, macchie)"], "type": "con_aura" },
+      { "intensity": 1, "side": "", "aura": ["Visiva (luci, zig-zag, macchie)", "Sensitiva (formicolii)"], "er": true },
+      { "side": "dx", "aura": [], "type": "senza_aura", "areas": ["Tempie"] }
+    ]
+  },
+  {
+    "name": "afgebroken regels, lijsten en meerdere datums op een regel",
+    "lines": [
+      "2025",
+      "8-3 sterke migraine die de hele dag duurde",
+      "ging 's avonds vanzelf over",
+      "",
+      "9-3 lichte pijn; 10-3 sterk; 11-3 niets",
+      "beoordeling 7 met ibuprofen",
+      "afspraak bij de neuroloog op 15-3 om 10 uur",
+      "16-3 controle, MRI gepland"
+    ],
+    "count": 5,
+    "expect": [
+      { "date": "2025-03-08", "intensity": 7, "approxDur": "12to24" },
+      { "date": "2025-03-09", "intensity": 2 },
+      { "date": "2025-03-10", "intensity": 7 },
+      { "date": "2025-03-11" },
+      { "date": "2025-03-16", "kind": "other" }
+    ]
+  },
+  {
+    "name": "intensiteit in cijfers en woorden",
+    "lines": [
+      "2025",
+      "1-6 pijn 7 op 10",
+      "2-6 een 8 van de 10 met misselijkheid",
+      "3-6 intensiteit 6",
+      "4-6 pijn van 9, ondraaglijk",
+      "5-6 draaglijke pijn",
+      "6-6 zeer sterk, de ergste van mijn leven",
+      "7-6 lichte pijn, daarna erger geworden en zeer sterk"
+    ],
+    "count": 7,
+    "expect": [
+      { "intensity": 7 },
+      { "intensity": 8, "symptomsHas": ["Nausea"] },
+      { "intensity": 6 },
+      { "intensity": 9 },
+      { "intensity": 4 },
+      { "intensity": 10 },
+      { "intensity": 8 }
+    ]
+  },
+  {
+    "name": "onmogelijke en ongeordende datums",
+    "lines": ["2025", "31-4 sterk", "29-2 lichte pijn", "30-4 sterk", "2-4 ibuprofen"],
+    "count": 4,
+    "expect": [
+      { "date": null },
+      { "date": null },
+      { "date": "2025-04-30" },
+      { "date": "2025-04-02" }
+    ]
+  },
+  {
+    "name": "alleen menstruatie, pijnvrije dagen en afspraken zijn geen aanvallen",
+    "lines": [
+      "2025",
+      "5-5 ongesteld",
+      "6-5 begin van mijn menstruatie",
+      "7-5 morgen ongesteld",
+      "8-5 geen pijn",
+      "9-5 alles goed",
+      "10-5 afspraak bij de neuroloog",
+      "11-5 hoofdpijn, ongesteld"
+    ],
+    "count": 7,
+    "expect": [
+      { "date": "2025-05-05", "kind": "menses", "mensesToday": true },
+      { "date": "2025-05-06", "kind": "menses", "mensesToday": true },
+      { "date": "2025-05-07", "kind": "other", "mensesToday": false },
+      { "date": "2025-05-08", "kind": "free" },
+      { "date": "2025-05-09", "kind": "free" },
+      { "date": "2025-05-10", "kind": "other" },
+      { "date": "2025-05-11", "kind": "attack", "mensesToday": true }
+    ]
+  },
+  {
+    "name": "slapen (slaap en tijdelijk gebied), overgeven en alcohol",
+    "lines": [
+      "Mei 2025",
+      "3 bonzende slapen, ik moest overgeven, lichtgevoelig",
+      "4 zeer sterke hoofdpijn, ik heb slecht geslapen en weinig gedronken",
+      "5 in de kroeg geweest, een biertje"
+    ],
+    "count": 3,
+    "expect": [
+      { "areasHas": ["Tempie"], "qualityHas": ["Pulsante"], "symptoms": ["Vomito", "Sensibilità alla luce"] },
+      { "intensity": 8, "triggers": ["Poco sonno", "Disidratazione"] },
+      { "triggers": ["Alcol"] }
+    ]
+  }
+]

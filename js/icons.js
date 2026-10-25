@@ -1,4 +1,5 @@
 import { h } from './dom.js';
+import { t } from './i18n.js';
 
 const circle = (cx, cy, r, extra = {}) => ['circle', { cx, cy, r, ...extra }];
 const dot = (cx, cy) => ['circle', { cx, cy, r: 1.5, fill: 'currentColor', stroke: 'none' }];
@@ -30,6 +31,7 @@ const ICONS = {
   bell: [['path', { d: 'M6 16.5V11a6 6 0 0 1 12 0v5.5l1.5 1.5h-15zM10 21a2 2 0 0 0 4 0' }]],
   sliders: [['path', { d: 'M4 7h9M17 7h3M4 17h3M11 17h9' }], circle(15, 7, 2), circle(9, 17, 2)],
   info: [circle(12, 12, 9), ['path', { d: 'M12 11v5.5M12 7.5v.01' }]],
+  globe: [circle(12, 12, 9), ['path', { d: 'M3 12h18M12 3c2.6 2.4 4 5.5 4 9s-1.4 6.6-4 9c-2.6-2.4-4-5.5-4-9s1.4-6.6 4-9z' }]],
   wind: [['path', { d: 'M3.5 8.5h10A2.5 2.5 0 1 0 11 6M3.5 12.5h14a2.5 2.5 0 1 1-2.5 2.5M3.5 16.5h6a2.5 2.5 0 1 1-2.5 2.5' }]],
   share: [['path', { d: 'M12 3.5v12M8 7.5l4-4 4 4M6.5 11H6a1.5 1.5 0 0 0-1.5 1.5v7A1.5 1.5 0 0 0 6 21h12a1.5 1.5 0 0 0 1.5-1.5v-7A1.5 1.5 0 0 0 18 11h-.5' }]],
   search: [circle(11, 11, 6.5), ['path', { d: 'm16 16 4.5 4.5' }]],
@@ -81,7 +83,7 @@ function build(spec) {
 
 export function icon(name, size = 22, cls = '') {
   const spec = ICONS[name];
-  if (!spec) throw new Error(`Icona sconosciuta: ${name}`);
+  if (!spec) throw new Error(t('Icona sconosciuta: {nome}', { nome: name }));
   return h(
     'svg',
     {

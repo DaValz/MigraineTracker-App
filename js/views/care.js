@@ -1,5 +1,6 @@
 import { h, replaceChildren } from '../dom.js';
 import { icon } from '../icons.js';
+import { t, collate } from '../i18n.js';
 import * as store from '../store.js';
 import {
   openPage, confirmDialog, toast, row, group, section, footnote, field, button, card, chipGroup, textArea, textInput, dateTimeInput, toggleRow, emptyState, pill,
@@ -25,12 +26,12 @@ export function upcomingVisits(db, now = nowStr()) {
 }
 
 export function visitWhen(v) {
-  return `${capitalize(fmtDateMedium(v.at))}, ore ${fmtTime(v.at)}`;
+  return t('{data}, ore {ora}', { data: capitalize(fmtDateMedium(v.at)), ora: fmtTime(v.at) });
 }
 
 function telHref(phone) {
   const n = String(phone || '').replace(/[^\d+]/g, '');
-  return n ? `tel:${n}` : null;
+  return n ? `tel:${n}` : null; // i18n-ignore
 }
 
 function contactSubtitle(c) {
@@ -39,28 +40,28 @@ function contactSubtitle(c) {
 
 function editorPage({ title, draft, build, onSave, onDelete = null }) {
   const initial = JSON.stringify(draft);
-  const saveBtn = h('button', { type: 'button', class: 'bar-btn solid' }, 'Salva');
+  const saveBtn = h('button', { type: 'button', class: 'bar-btn solid' }, t('Salva'));
   const page = openPage({
     title,
-    backLabel: 'Annulla',
+    backLabel: t('Annulla'),
     right: saveBtn,
     onBack: async (p) => {
       if (JSON.stringify(draft) === initial) {
         p.close();
         return;
       }
-      if (await confirmDialog({ title: 'Scartare le modifiche?', confirmLabel: 'Scarta', cancelLabel: 'Continua', danger: true })) p.close();
+      if (await confirmDialog({ title: t('Scartare le modifiche?'), confirmLabel: t('Scarta'), cancelLabel: t('Continua§edit'), danger: true })) p.close();
     },
   });
   const nodes = build(draft);
   if (onDelete) {
     nodes.push(button({
-      label: 'Elimina',
+      label: t('Elimina'),
       kind: 'danger',
       icon: 'trash',
       block: true,
       onClick: async () => {
-        if (!(await confirmDialog({ title: 'Eliminare?', message: 'Potrai annullare subito dopo.', confirmLabel: 'Elimina', danger: true }))) return;
+        if (!(await confirmDialog({ title: t('Eliminare?'), message: t('Potrai annullare subito dopo.'), confirmLabel: t('Elimina'), danger: true }))) return;
         page.close();
         onDelete();
       },
@@ -72,7 +73,7 @@ function editorPage({ title, draft, build, onSave, onDelete = null }) {
     try {
       res = onSave(draft);
     } catch (e) {
-      toast(e.message || 'Controlla i dati inseriti.', { tone: 'error' });
+      toast(e.message || t('Controlla i dati inseriti.'), { tone: 'error' });
       return;
     }
     if (res === false) return;
@@ -87,53 +88,53 @@ export function openContactEditor(existing = null, { onDone = null } = {}) {
   const draft = existing ? clone(existing) : {
     name: '', role: 'center', org: '', dept: '', address: '', phone: '', phone2: '', email: '', hours: '', note: '', main: !store.getDb().contacts.length,
   };
-  const t = (key, label, placeholder, opts = {}) => field({
+  const textField = (key, label, placeholder, opts = {}) => field({
     label,
     control: textInput({
       value: draft[key], placeholder, label, maxLength: opts.max || 120, type: opts.type || 'text', inputMode: opts.inputMode || null, onInput: (v) => { draft[key] = v; },
     }),
   });
   return editorPage({
-    title: existing ? 'Modifica contatto' : 'Nuovo contatto',
+    title: existing ? t('Modifica contatto') : t('Nuovo contatto'),
     draft,
     build: (d) => [
       card(
-        field({ label: 'Tipo', control: chipGroup({ options: CONTACT_ROLES.map((r) => ({ value: r.id, label: r.label })), value: d.role, allowClear: false, onChange: (v) => { d.role = v || 'other'; } }) }),
-        t('name', 'Nome', 'es. Centro Cefalee – Neurologia oppure Dr.ssa Rossi'),
-        t('org', 'Ospedale o struttura', 'es. Ospedale San Raffaele'),
-        t('dept', 'Reparto o ambulatorio', 'es. Ambulatorio cefalee, piano 2'),
+        field({ label: t('Tipo'), control: chipGroup({ options: CONTACT_ROLES.map((r) => ({ value: r.id, label: r.label })), value: d.role, allowClear: false, onChange: (v) => { d.role = v || 'other'; } }) }),
+        textField('name', t('Nome'), t('es. Centro Cefalee – Neurologia oppure Dr.ssa Rossi')),
+        textField('org', t('Ospedale o struttura'), t('es. Ospedale San Raffaele')),
+        textField('dept', t('Reparto o ambulatorio'), t('es. Ambulatorio cefalee, piano 2')),
       ),
       card(
-        t('phone', 'Telefono', 'es. 02 1234 5678', { type: 'tel', inputMode: 'tel', max: 40 }),
-        t('phone2', 'Altro telefono (CUP, segreteria…)', '', { type: 'tel', inputMode: 'tel', max: 40 }),
-        t('email', 'Email', 'es. cefalee@ospedale.it', { type: 'email', inputMode: 'email' }),
-        t('address', 'Indirizzo', 'Via, numero, città', { max: 200 }),
-        t('hours', 'Orari', 'es. Lun–Ven 9–13', { max: 160 }),
+        textField('phone', t('Telefono'), t('es. 02 1234 5678'), { type: 'tel', inputMode: 'tel', max: 40 }),
+        textField('phone2', t('Altro telefono (CUP, segreteria…)'), '', { type: 'tel', inputMode: 'tel', max: 40 }),
+        textField('email', t('Email'), t('es. cefalee@ospedale.it'), { type: 'email', inputMode: 'email' }),
+        textField('address', t('Indirizzo'), t('Via, numero, città'), { max: 200 }),
+        textField('hours', t('Orari'), t('es. Lun–Ven 9–13'), { max: 160 }),
         field({
-          label: 'Note', control: textArea({ value: d.note, rows: 3, maxLength: 1000, label: 'Note sul contatto', placeholder: 'Come prenotare, nome dell’infermiera di riferimento…', onInput: (v) => { d.note = v; } }),
+          label: t('Note'), control: textArea({ value: d.note, rows: 3, maxLength: 1000, label: t('Note sul contatto'), placeholder: t('Come prenotare, nome dell’infermiera di riferimento…'), onInput: (v) => { d.note = v; } }),
         }),
       ),
-      group(toggleRow({ icon: 'hospital', tone: 'red', title: 'Centro di riferimento principale', subtitle: 'Mostrato per primo e nel report', checked: d.main, onChange: (v) => { d.main = v; } })),
+      group(toggleRow({ icon: 'hospital', tone: 'red', title: t('Centro di riferimento principale'), subtitle: t('Mostrato per primo e nel report'), checked: d.main, onChange: (v) => { d.main = v; } })),
     ],
     onSave: (d) => {
-      if (!d.name.trim()) throw new Error('Scrivi il nome.');
-      if (d.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(d.email.trim())) throw new Error('L’indirizzo email non è valido.');
+      if (!d.name.trim()) throw new Error(t('Scrivi il nome.'));
+      if (d.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(d.email.trim())) throw new Error(t('L’indirizzo email non è valido.'));
       if (d.main) store.getDb().contacts.filter((c) => c.main && (!existing || c.id !== existing.id)).forEach((c) => store.upsertRecord('contacts', { ...c, main: false }));
       const saved = store.upsertRecord('contacts', { ...d, id: existing ? existing.id : undefined });
-      toast('Contatto salvato');
+      toast(t('Contatto salvato'));
       if (onDone) onDone(saved);
       return true;
     },
     onDelete: existing ? () => {
       const removed = store.removeRecord('contacts', existing.id);
-      toast('Contatto eliminato', { action: { label: 'Annulla', onClick: () => store.upsertRecord('contacts', removed) } });
+      toast(t('Contatto eliminato'), { action: { label: t('Annulla§undo'), onClick: () => store.upsertRecord('contacts', removed) } });
       if (onDone) onDone(null);
     } : null,
   });
 }
 
 export function openContactDetail(id) {
-  const page = openPage({ title: 'Contatto' });
+  const page = openPage({ title: t('Contatto') });
   const render = () => {
     const db = store.getDb();
     const c = db.contacts.find((x) => x.id === id);
@@ -142,12 +143,12 @@ export function openContactDetail(id) {
       return;
     }
     page.setTitle(c.name);
-    page.setRight(h('button', { type: 'button', class: 'bar-btn', onclick: () => openContactEditor(c) }, 'Modifica'));
+    page.setRight(h('button', { type: 'button', class: 'bar-btn', onclick: () => openContactEditor(c) }, t('Modifica')));
     const actions = [];
-    if (c.phone) actions.push(row({ icon: 'phone', tone: 'green', title: 'Chiama', subtitle: c.phone, href: telHref(c.phone) }));
-    if (c.phone2) actions.push(row({ icon: 'phone', tone: 'green', title: 'Chiama (altro numero)', subtitle: c.phone2, href: telHref(c.phone2) }));
-    if (c.email) actions.push(row({ icon: 'mail', tone: 'blue', title: 'Scrivi un’email', subtitle: c.email, href: `mailto:${c.email}` }));
-    if (c.address) actions.push(row({ icon: 'pin', tone: 'red', title: 'Apri in Mappe', subtitle: c.address, href: `https://maps.apple.com/?q=${encodeURIComponent([c.org, c.address].filter(Boolean).join(', '))}`, target: '_blank' }));
+    if (c.phone) actions.push(row({ icon: 'phone', tone: 'green', title: t('Chiama'), subtitle: c.phone, href: telHref(c.phone) }));
+    if (c.phone2) actions.push(row({ icon: 'phone', tone: 'green', title: t('Chiama (altro numero)'), subtitle: c.phone2, href: telHref(c.phone2) }));
+    if (c.email) actions.push(row({ icon: 'mail', tone: 'blue', title: t('Scrivi un’email'), subtitle: c.email, href: `mailto:${c.email}` }));
+    if (c.address) actions.push(row({ icon: 'pin', tone: 'red', title: t('Apri in Mappe'), subtitle: c.address, href: `https://maps.apple.com/?q=${encodeURIComponent([c.org, c.address].filter(Boolean).join(', '))}`, target: '_blank' }));
     const docs = db.docs.filter((d) => d.contactId === c.id).length;
     const visits = db.visits.filter((v) => v.contactId === c.id);
     replaceChildren(
@@ -158,15 +159,15 @@ export function openContactDetail(id) {
           h('div', { style: { minWidth: '0' } },
             h('div', { style: { fontSize: '1.2rem', fontWeight: '700' } }, c.name),
             h('div', { class: 'muted small' }, contactSubtitle(c)),
-            c.main ? h('div', { style: { marginTop: '6px' } }, pill('Centro principale', 'red')) : null)),
-        c.hours ? h('div', { class: 'kv', style: { marginTop: '8px' } }, h('span', {}, 'Orari'), h('b', {}, c.hours)) : null,
+            c.main ? h('div', { style: { marginTop: '6px' } }, pill(t('Centro principale'), 'red')) : null)),
+        c.hours ? h('div', { class: 'kv', style: { marginTop: '8px' } }, h('span', {}, t('Orari')), h('b', {}, c.hours)) : null,
         c.note ? h('p', { class: 'muted pre', style: { marginTop: '8px' } }, c.note) : null,
       ),
       actions.length ? group(...actions) : null,
       group(
-        row({ icon: 'calendar', tone: 'indigo', title: 'Visite', right: String(visits.length), chevron: true, onClick: () => openCare() }),
+        row({ icon: 'calendar', tone: 'indigo', title: t('Visite'), right: String(visits.length), chevron: true, onClick: () => openCare() }),
         row({
-          icon: 'folder', tone: 'blue', title: 'Documenti', right: String(docs), chevron: true,
+          icon: 'folder', tone: 'blue', title: t('Documenti'), right: String(docs), chevron: true,
           onClick: async () => {
             const { openDocuments } = await import('./documents.js');
             openDocuments({ contactId: c.id });
@@ -183,9 +184,9 @@ export function openContactDetail(id) {
 
 /* ---------- visite ---------- */
 
-export function contactSelect({ value, onChange, label = 'Centro o medico' }) {
+export function contactSelect({ value, onChange, label = t('Centro o medico') }) {
   const db = store.getDb();
-  const sel = h('select', { class: 'input select', 'aria-label': label }, h('option', { value: '' }, 'Nessuno'), db.contacts.map((c) => h('option', { value: c.id }, c.name)));
+  const sel = h('select', { class: 'input select', 'aria-label': label }, h('option', { value: '' }, t('Nessuno')), db.contacts.map((c) => h('option', { value: c.id }, c.name)));
   sel.value = value || '';
   sel.addEventListener('change', () => onChange(sel.value));
   return sel;
@@ -199,37 +200,37 @@ export function openVisitEditor(existing = null, { onDone = null, preset = {} } 
     at: base, kind: 'visit', contactId: main ? main.id : '', place: '', note: '', questions: '', outcome: '', ...preset,
   };
   return editorPage({
-    title: existing ? 'Modifica visita' : 'Nuova visita',
+    title: existing ? t('Modifica visita') : t('Nuova visita'),
     draft,
     build: (d) => [
       card(
-        field({ label: 'Quando', control: dateTimeInput({ value: d.at, label: 'Data e ora della visita', onChange: (v) => { if (v) d.at = v; } }) }),
-        field({ label: 'Tipo', control: chipGroup({ options: VISIT_KINDS.map((k) => ({ value: k.id, label: k.label })), value: d.kind, allowClear: false, onChange: (v) => { d.kind = v || 'other'; } }) }),
-        field({ label: 'Centro o medico', control: contactSelect({ value: d.contactId, onChange: (v) => { d.contactId = v; } }), hint: db.contacts.length ? null : 'Aggiungi il tuo centro cefalee in «Centri e medici» per collegarlo alle visite.' }),
-        field({ label: 'Luogo', control: textInput({ value: d.place, placeholder: 'es. Padiglione B, ambulatorio 3', maxLength: 160, label: 'Luogo della visita', onInput: (v) => { d.place = v; } }) }),
+        field({ label: t('Quando'), control: dateTimeInput({ value: d.at, label: t('Data e ora della visita'), onChange: (v) => { if (v) d.at = v; } }) }),
+        field({ label: t('Tipo'), control: chipGroup({ options: VISIT_KINDS.map((k) => ({ value: k.id, label: k.label })), value: d.kind, allowClear: false, onChange: (v) => { d.kind = v || 'other'; } }) }),
+        field({ label: t('Centro o medico'), control: contactSelect({ value: d.contactId, onChange: (v) => { d.contactId = v; } }), hint: db.contacts.length ? null : t('Aggiungi il tuo centro cefalee in «Centri e medici» per collegarlo alle visite.') }),
+        field({ label: t('Luogo'), control: textInput({ value: d.place, placeholder: t('es. Padiglione B, ambulatorio 3'), maxLength: 160, label: t('Luogo della visita'), onInput: (v) => { d.place = v; } }) }),
       ),
       card(
         field({
-          label: 'Domande da fare al medico',
-          control: textArea({ value: d.questions, rows: 4, maxLength: 2000, label: 'Domande da fare', placeholder: 'Annota qui le domande man mano che ti vengono in mente…', onInput: (v) => { d.questions = v; } }),
+          label: t('Domande da fare al medico'),
+          control: textArea({ value: d.questions, rows: 4, maxLength: 2000, label: t('Domande da fare'), placeholder: t('Annota qui le domande man mano che ti vengono in mente…'), onInput: (v) => { d.questions = v; } }),
         }),
         field({
-          label: 'Esito della visita',
-          control: textArea({ value: d.outcome, rows: 4, maxLength: 3000, label: 'Esito della visita', placeholder: 'Cosa ha detto il medico, cambi di terapia, prossimo controllo…', onInput: (v) => { d.outcome = v; } }),
+          label: t('Esito della visita'),
+          control: textArea({ value: d.outcome, rows: 4, maxLength: 3000, label: t('Esito della visita'), placeholder: t('Cosa ha detto il medico, cambi di terapia, prossimo controllo…'), onInput: (v) => { d.outcome = v; } }),
         }),
-        field({ label: 'Note', control: textArea({ value: d.note, rows: 2, maxLength: 1000, label: 'Note sulla visita', onInput: (v) => { d.note = v; } }) }),
+        field({ label: t('Note'), control: textArea({ value: d.note, rows: 2, maxLength: 1000, label: t('Note sulla visita'), onInput: (v) => { d.note = v; } }) }),
       ),
     ],
     onSave: (d) => {
       const saved = store.upsertRecord('visits', { ...d, id: existing ? existing.id : undefined });
       const future = saved.at >= nowStr();
-      toast('Visita salvata', future ? { action: { label: 'Al Calendario', onClick: () => visitToCalendar(saved) } } : {});
+      toast(t('Visita salvata'), future ? { action: { label: t('Al Calendario'), onClick: () => visitToCalendar(saved) } } : {});
       if (onDone) onDone(saved);
       return true;
     },
     onDelete: existing ? () => {
       const removed = store.removeRecord('visits', existing.id);
-      toast('Visita eliminata', { action: { label: 'Annulla', onClick: () => store.upsertRecord('visits', removed) } });
+      toast(t('Visita eliminata'), { action: { label: t('Annulla§undo'), onClick: () => store.upsertRecord('visits', removed) } });
     } : null,
   });
 }
@@ -238,9 +239,10 @@ export function visitToCalendar(v) {
   const db = store.getDb();
   const c = db.contacts.find((x) => x.id === v.contactId);
   const location = [v.place, c && c.org, c && c.address].filter(Boolean).join(', ');
-  const description = [c ? `${c.name}${c.phone ? ` – tel. ${c.phone}` : ''}` : '', v.questions ? `Domande:\n${v.questions}` : ''].filter(Boolean).join('\n\n');
+  const contactLine = c ? (c.phone ? t('{nome} – tel. {telefono}', { nome: c.name, telefono: c.phone }) : c.name) : '';
+  const description = [contactLine, v.questions ? `${t('Domande:')}\n${v.questions}` : ''].filter(Boolean).join('\n\n');
   return exportEventIcs({
-    uid: `visit-${v.id}`, title: `${visitKindLabel(v.kind)}${c ? ` – ${c.name}` : ''}`, at: v.at, durationMin: 60, location, description,
+    uid: `visit-${v.id}`, title: `${visitKindLabel(v.kind)}${c ? ` – ${c.name}` : ''}`, at: v.at, durationMin: 60, location, description, // i18n-ignore
   });
 }
 
@@ -250,39 +252,39 @@ function visitRow(v, db, onClick) {
     icon: v.kind === 'botox' || v.kind === 'infusion' ? 'syringe' : (v.kind === 'exam' ? 'scan' : 'stethoscope'),
     tone: v.at >= nowStr() ? 'indigo' : 'gray',
     title: visitKindLabel(v.kind),
-    subtitle: [visitWhen(v), c ? c.name : '', v.outcome ? 'esito registrato' : ''].filter(Boolean).join('\n'),
+    subtitle: [visitWhen(v), c ? c.name : '', v.outcome ? t('esito registrato') : ''].filter(Boolean).join('\n'),
     chevron: true,
     onClick,
   });
 }
 
 export function openCare() {
-  const page = openPage({ title: 'Centro curante e visite' });
+  const page = openPage({ title: t('Centro curante e visite') });
   let showAll = false;
   const render = () => {
     const top = page.body.scrollTop;
     const db = store.getDb();
     const now = nowStr();
-    const contacts = [...db.contacts].sort((a, b) => (b.main - a.main) || a.name.localeCompare(b.name, 'it'));
+    const contacts = [...db.contacts].sort((a, b) => (b.main - a.main) || collate(a.name, b.name));
     const upcoming = db.visits.filter((v) => v.at >= now).sort((a, b) => (a.at < b.at ? -1 : 1));
     const past = db.visits.filter((v) => v.at < now).sort((a, b) => (a.at < b.at ? 1 : -1));
     const shownPast = showAll ? past : past.slice(0, 6);
     replaceChildren(
       page.body,
-      h('p', { class: 'page-intro' }, 'I riferimenti del centro che ti segue e le visite, con le domande da fare e l’esito di ognuna.'),
-      section('Centri e medici', contacts.length ? group(...contacts.map((c) => row({
+      h('p', { class: 'page-intro' }, t('I riferimenti del centro che ti segue e le visite, con le domande da fare e l’esito di ognuna.')),
+      section(t('Centri e medici'), contacts.length ? group(...contacts.map((c) => row({
         icon: contactRole(c.role).icon,
         tone: ROLE_TONES[c.role] || 'gray',
         title: c.name,
         subtitle: [contactSubtitle(c), c.phone].filter(Boolean).join('\n'),
-        right: c.main ? pill('Principale', 'red') : null,
+        right: c.main ? pill(t('Principale'), 'red') : null,
         chevron: true,
         onClick: () => openContactDetail(c.id),
-      }))) : null, group(row({ icon: 'plus', tone: 'green', title: 'Aggiungi centro o medico', onClick: () => openContactEditor(null) }))),
-      section('Prossime visite', upcoming.length ? group(...upcoming.map((v) => visitRow(v, db, () => openVisitEditor(v)))) : card(h('p', { class: 'muted' }, 'Nessuna visita in programma.')), group(row({ icon: 'calendar-plus', tone: 'indigo', title: 'Aggiungi una visita', onClick: () => openVisitEditor(null) }))),
-      past.length ? section('Visite passate', group(...shownPast.map((v) => visitRow(v, db, () => openVisitEditor(v)))), past.length > shownPast.length ? button({ label: `Mostra tutte (${past.length})`, kind: 'ghost', block: true, onClick: () => { showAll = true; render(); } }) : null) : null,
-      !contacts.length && !db.visits.length ? emptyState({ icon: 'hospital', title: 'Il tuo centro curante', text: 'Salva qui telefono, email e indirizzo del centro cefalee o del neurologo: li avrai a portata di mano e compariranno nel report.' }) : null,
-      footnote('Dopo aver salvato una visita futura puoi aggiungerla al Calendario dell’iPhone per ricevere un promemoria.'),
+      }))) : null, group(row({ icon: 'plus', tone: 'green', title: t('Aggiungi centro o medico'), onClick: () => openContactEditor(null) }))),
+      section(t('Prossime visite'), upcoming.length ? group(...upcoming.map((v) => visitRow(v, db, () => openVisitEditor(v)))) : card(h('p', { class: 'muted' }, t('Nessuna visita in programma.'))), group(row({ icon: 'calendar-plus', tone: 'indigo', title: t('Aggiungi una visita'), onClick: () => openVisitEditor(null) }))),
+      past.length ? section(t('Visite passate'), group(...shownPast.map((v) => visitRow(v, db, () => openVisitEditor(v)))), past.length > shownPast.length ? button({ label: t('Mostra tutte ({n})', { n: past.length }), kind: 'ghost', block: true, onClick: () => { showAll = true; render(); } }) : null) : null,
+      !contacts.length && !db.visits.length ? emptyState({ icon: 'hospital', title: t('Il tuo centro curante'), text: t('Salva qui telefono, email e indirizzo del centro cefalee o del neurologo: li avrai a portata di mano e compariranno nel report.') }) : null,
+      footnote(t('Dopo aver salvato una visita futura puoi aggiungerla al Calendario dell’iPhone per ricevere un promemoria.')),
     );
     page.body.scrollTop = top;
   };

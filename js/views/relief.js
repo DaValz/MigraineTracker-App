@@ -1,41 +1,44 @@
 import { h, replaceChildren } from '../dom.js';
 import { openFullscreen, segmented, button } from '../ui.js';
+import { t } from '../i18n.js';
 
 const PATTERNS = [
   {
     id: 'calm',
-    label: 'Calma 4-6',
+    label: t('Calma 4-6'),
     phases: [
-      { label: 'Inspira', dur: 4, scale: 1 },
-      { label: 'Espira', dur: 6, scale: 0.55 },
+      { label: t('Inspira'), dur: 4, scale: 1 },
+      { label: t('Espira'), dur: 6, scale: 0.55 },
     ],
   },
   {
     id: 'box',
-    label: 'Quadrato',
+    label: t('Quadrato'),
     phases: [
-      { label: 'Inspira', dur: 4, scale: 1 },
-      { label: 'Trattieni', dur: 4, scale: 1 },
-      { label: 'Espira', dur: 4, scale: 0.55 },
-      { label: 'Trattieni', dur: 4, scale: 0.55 },
+      { label: t('Inspira'), dur: 4, scale: 1 },
+      { label: t('Trattieni'), dur: 4, scale: 1 },
+      { label: t('Espira'), dur: 4, scale: 0.55 },
+      { label: t('Trattieni'), dur: 4, scale: 0.55 },
     ],
   },
   {
     id: '478',
     label: '4-7-8',
     phases: [
-      { label: 'Inspira', dur: 4, scale: 1 },
-      { label: 'Trattieni', dur: 7, scale: 1 },
-      { label: 'Espira', dur: 8, scale: 0.55 },
+      { label: t('Inspira'), dur: 4, scale: 1 },
+      { label: t('Trattieni'), dur: 7, scale: 1 },
+      { label: t('Espira'), dur: 8, scale: 0.55 },
     ],
   },
 ];
 
 export function openRelief() {
-  const full = openFullscreen({ label: 'Modalità sollievo' });
+  const full = openFullscreen({ label: t('Modalità sollievo') });
+  const idleText = t('Respira con calma');
+  const idleHint = t('Luce bassa, silenzio. Se puoi, bevi un po’ d’acqua.');
   const orb = h('div', { class: 'relief-orb' });
-  const text = h('div', { class: 'relief-text', 'aria-live': 'polite' }, 'Respira con calma');
-  const sub = h('div', { class: 'relief-sub' }, 'Luce bassa, silenzio. Se puoi, bevi un po’ d’acqua.');
+  const text = h('div', { class: 'relief-text', 'aria-live': 'polite' }, idleText);
+  const sub = h('div', { class: 'relief-sub' }, idleHint);
   let pattern = PATTERNS[0];
   let running = false;
   let phaseTimer = null;
@@ -54,8 +57,8 @@ export function openRelief() {
     if (!running) return;
     const p = pattern.phases[i % pattern.phases.length];
     text.textContent = p.label;
-    orb.style.transition = `transform ${p.dur}s ease-in-out`;
-    orb.style.transform = `scale(${p.scale})`;
+    orb.style.transition = `transform ${p.dur}s ease-in-out`; // i18n-ignore
+    orb.style.transform = `scale(${p.scale})`; // i18n-ignore
     phaseTimer = setTimeout(() => runPhase(i + 1), p.dur * 1000);
   };
 
@@ -63,10 +66,10 @@ export function openRelief() {
     running = false;
     clearTimeout(phaseTimer);
     clearInterval(clockTimer);
-    orb.style.transition = 'transform 1.2s ease-in-out';
+    orb.style.transition = 'transform 1.2s ease-in-out'; // i18n-ignore
     orb.style.transform = 'scale(.55)';
-    text.textContent = 'Respira con calma';
-    sub.textContent = 'Luce bassa, silenzio. Se puoi, bevi un po’ d’acqua.';
+    text.textContent = idleText;
+    sub.textContent = idleHint;
     releaseWake();
     paintButton();
   };
@@ -91,15 +94,15 @@ export function openRelief() {
     paintButton();
   };
 
-  const toggleBtn = button({ label: 'Avvia', kind: 'secondary', size: 'lg', onClick: () => (running ? stop() : start()) });
+  const toggleBtn = button({ label: t('Avvia'), kind: 'secondary', size: 'lg', onClick: () => (running ? stop() : start()) });
   const paintButton = () => {
-    replaceChildren(toggleBtn, h('span', {}, running ? 'Pausa' : 'Avvia'));
+    replaceChildren(toggleBtn, h('span', {}, running ? t('Pausa') : t('Avvia')));
   };
 
   const picker = segmented({
     options: PATTERNS.map((p) => ({ value: p.id, label: p.label })),
     value: pattern.id,
-    ariaLabel: 'Schema di respirazione',
+    ariaLabel: t('Schema di respirazione'),
     onChange: (v) => {
       pattern = PATTERNS.find((p) => p.id === v);
       if (running) {
@@ -108,7 +111,7 @@ export function openRelief() {
       }
     },
   });
-  picker.style.width = 'min(100%, 340px)';
+  picker.style.width = 'min(100%, 340px)'; // i18n-ignore
 
   replaceChildren(
     full.el,
@@ -116,7 +119,7 @@ export function openRelief() {
     text,
     sub,
     picker,
-    h('div', { class: 'btn-row', style: { width: 'min(100%, 340px)' } }, toggleBtn, button({ label: 'Chiudi', kind: 'secondary', size: 'lg', onClick: () => full.close() })),
+    h('div', { class: 'btn-row', style: { width: 'min(100%, 340px)' } }, toggleBtn, button({ label: t('Chiudi'), kind: 'secondary', size: 'lg', onClick: () => full.close() })), // i18n-ignore
   );
   full.onClosed(() => {
     running = false;

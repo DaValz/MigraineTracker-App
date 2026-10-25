@@ -1,0 +1,108 @@
+[
+  {
+    "name": "US style: month/day, ranges, ditto and years",
+    "lines": [
+      "Headache diary",
+      "2024",
+      "6/26 headache on the left side, took ibuprofen 400mg",
+      "6/27 ditto",
+      "6/28/2024 severe 9/10, nausea and vomiting, light sensitivity",
+      "7/1 - 7/3 on and off all day",
+      "2025",
+      "1/4 mild, behind my right eye"
+    ],
+    "count": 5,
+    "order": "mdy",
+    "expect": [
+      { "date": "2024-06-26", "side": "sx", "meds": [{ "name": "Ibuprofene", "dose": "400 mg" }] },
+      { "date": "2024-06-27", "side": "sx", "flags": { "ditto": true } },
+      { "date": "2024-06-28", "intensity": 9, "symptoms": ["Nausea", "Vomito", "Sensibilità alla luce"] },
+      { "date": "2024-07-01", "endDate": "2024-07-03" },
+      { "date": "2025-01-04", "intensity": 2, "areas": ["Dietro un occhio"], "side": "dx" }
+    ]
+  },
+  {
+    "name": "written months with ordinals and weekdays",
+    "lines": [
+      "June 26, 2024 - mild headache",
+      "Jun 27th: pounding pain, right temple, took Excedrin Migraine",
+      "Thu 28 June 2024 stress and poor sleep, pain level 6",
+      "29th of June 2024 aura with zigzag lines, then stabbing pain",
+      "July 2 2024 - 7 out of 10"
+    ],
+    "count": 5,
+    "expect": [
+      { "date": "2024-06-26", "intensity": 2 },
+      { "date": "2024-06-27", "qualityHas": ["Pulsante"], "areasHas": ["Tempie"], "side": "dx", "meds": [{ "name": "Excedrin" }] },
+      { "date": "2024-06-28", "intensity": 6, "triggers": ["Stress", "Poco sonno"] },
+      { "date": "2024-06-29", "aura": ["Visiva (luci, zig-zag, macchie)"], "type": "con_aura", "qualityHas": ["Trafittivo"] },
+      { "date": "2024-07-02", "intensity": 7 }
+    ]
+  },
+  {
+    "name": "UK style day/month with medication outcomes",
+    "lines": [
+      "26/06/2024 headache, took sumatriptan 50mg, did not work",
+      "27/06/2024 paracetamol helped a bit, still sore",
+      "28/06/2024 took two ibuprofen and it worked",
+      "29/06/2024 no headache today, feeling fine",
+      "30/06/2024 period started, bad migraine"
+    ],
+    "count": 5,
+    "order": "dmy",
+    "expect": [
+      { "date": "2024-06-26", "meds": [{ "name": "Sumatriptan", "dose": "50 mg", "effect": 0 }] },
+      { "date": "2024-06-27", "meds": [{ "name": "Paracetamolo", "effect": 1 }] },
+      { "date": "2024-06-28", "meds": [{ "name": "Ibuprofene", "count": 2, "effect": 2 }] },
+      { "date": "2024-06-29", "kind": "free" },
+      { "date": "2024-06-30", "menses": true, "mensesToday": true, "intensity": 7 }
+    ]
+  },
+  {
+    "name": "side words that are not sides",
+    "lines": [
+      "2025",
+      "2.03 all right in the morning, headache right now, left work early",
+      "3.03 pain on the left side of my head",
+      "4.03 right temple and left eye"
+    ],
+    "count": 3,
+    "expect": [
+      { "side": "" },
+      { "side": "sx" },
+      { "side": "alt", "areasHas": ["Tempie", "Occhi"] }
+    ]
+  },
+  {
+    "name": "triggers and symptoms in English",
+    "lines": [
+      "2025",
+      "5.04 after a hard workout, skipped lunch, hot weather",
+      "6.04 slept too much, loud music last night, strong perfume",
+      "7.04 dehydrated, a lot of coffee, no nausea",
+      "8.04 dizzy, blurry vision, sensitive to light and noise"
+    ],
+    "count": 4,
+    "expect": [
+      { "triggers": ["Sforzo fisico", "Pasto saltato", "Caldo"] },
+      { "triggers": ["Troppo sonno", "Rumori forti", "Odori forti"] },
+      { "triggers": ["Disidratazione", "Caffeina"], "symptoms": [] },
+      { "symptoms": ["Vertigini", "Vista offuscata", "Sensibilità alla luce", "Sensibilità ai rumori"] }
+    ]
+  },
+  {
+    "name": "month first with abbreviations, colon and ordinals",
+    "lines": [
+      "Mar 12: bad migraine, took ibuprofen",
+      "Mar 13: mild",
+      "Mar 14th - severe 9/10, sumatriptan 50mg"
+    ],
+    "today": "2026-10-25",
+    "count": 3,
+    "expect": [
+      { "date": "2026-03-12", "intensity": 7, "meds": [{ "name": "Ibuprofene" }] },
+      { "date": "2026-03-13", "intensity": 2 },
+      { "date": "2026-03-14", "intensity": 9, "meds": [{ "name": "Sumatriptan", "dose": "50 mg" }] }
+    ]
+  }
+]

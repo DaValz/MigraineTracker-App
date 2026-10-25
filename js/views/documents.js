@@ -7,7 +7,8 @@ import {
 } from '../ui.js';
 import { DOC_CATEGORIES, docCategory } from '../data.js';
 import { todayStr, fmtDateShort } from '../dates.js';
-import { bytes, plural } from '../format.js';
+import { bytes } from '../format.js';
+import { t } from '../i18n.js';
 import {
   saveFile, loadFile, loadThumb, saveThumb, prepareImage, drawScaled, loadImage, deleteFiles, filesSupported, storageInfo, protectedFids,
 } from '../files.js';
@@ -67,16 +68,16 @@ function queueThumb(f) {
 /** Riempie `el` con la miniatura del file (creandola se manca). */
 async function fillThumb(el, f, bag) {
   try {
-    let t = await loadThumb(f.fid);
-    if (!t && !thumbFailed.has(f.fid)) {
+    let thumb = await loadThumb(f.fid);
+    if (!thumb && !thumbFailed.has(f.fid)) {
       try {
-        t = await queueThumb(f);
+        thumb = await queueThumb(f);
       } catch (e) {
-        t = null;
+        thumb = null;
       }
-      if (!t) thumbFailed.add(f.fid);
+      if (!thumb) thumbFailed.add(f.fid);
     }
-    if (t && el.isConnected !== false) replaceChildren(el, h('img', { src: bag.add(t), alt: '', draggable: 'false' }));
+    if (thumb && el.isConnected !== false) replaceChildren(el, h('img', { src: bag.add(thumb), alt: '', draggable: 'false' }));
   } catch (e) { /* resta l'icona */ }
 }
 
@@ -94,11 +95,11 @@ export function openViewer(doc, start = 0) {
   let token = 0;
   const title = h('div', { class: 'title' });
   const body = h('div', { class: 'viewer-body' });
-  const prevBtn = h('button', { type: 'button', class: 'nav-btn round', 'aria-label': 'File precedente', onclick: () => go(index - 1) }, icon('chevron-left', 20));
-  const nextBtn = h('button', { type: 'button', class: 'nav-btn round', 'aria-label': 'File successivo', onclick: () => go(index + 1) }, icon('chevron-right', 20));
-  const zoomBtn = h('button', { type: 'button', class: 'nav-btn round', 'aria-label': 'Ingrandisci' }, icon('zoom-in', 20));
-  const shareBtn = h('button', { type: 'button', class: 'nav-btn round', 'aria-label': 'Condividi o salva il file' }, icon('share', 19));
-  const closeBtn = h('button', { type: 'button', class: 'nav-btn', onclick: () => full.close() }, 'Chiudi');
+  const prevBtn = h('button', { type: 'button', class: 'nav-btn round', 'aria-label': t('File precedente'), onclick: () => go(index - 1) }, icon('chevron-left', 20));
+  const nextBtn = h('button', { type: 'button', class: 'nav-btn round', 'aria-label': t('File successivo'), onclick: () => go(index + 1) }, icon('chevron-right', 20));
+  const zoomBtn = h('button', { type: 'button', class: 'nav-btn round', 'aria-label': t('Ingrandisci') }, icon('zoom-in', 20));
+  const shareBtn = h('button', { type: 'button', class: 'nav-btn round', 'aria-label': t('Condividi o salva il file') }, icon('share', 19));
+  const closeBtn = h('button', { type: 'button', class: 'nav-btn', onclick: () => full.close() }, t('Chiudi'));
   const bar = h('div', { class: 'viewer-bar' }, closeBtn, doc.files.length > 1 ? prevBtn : null, title, doc.files.length > 1 ? nextBtn : null, zoomBtn, shareBtn);
   replaceChildren(full.el, bar, body);
 
@@ -114,7 +115,7 @@ export function openViewer(doc, start = 0) {
   const status = (text) => replaceChildren(body, h('p', { class: 'viewer-status' }, text));
 
   async function showPdf(blob, my) {
-    status('Apertura del PDF…');
+    status(t('Apertura del PDF…'));
     const pdf = await openPdf(blob);
     if (my !== token) {
       closePdf(pdf);
@@ -125,10 +126,10 @@ export function openViewer(doc, start = 0) {
     if (my !== token) return;
     const width = Math.min(body.clientWidth - 16, 900) * zoom;
     const holders = ratios.map((r, i) => {
-      const el = h('div', { class: 'pdf-page', style: { width: `${width}px`, height: `${width * r}px` }, 'data-page': String(i + 1), 'aria-label': `Pagina ${i + 1}` });
+      const el = h('div', { class: 'pdf-page', style: { width: `${width}px`, height: `${width * r}px` }, 'data-page': String(i + 1), 'aria-label': t('Pagina {n}', { n: i + 1 }) });
       return el;
     });
-    replaceChildren(body, ...holders, h('p', { class: 'viewer-status' }, plural(pdf.numPages, 'pagina', 'pagine')));
+    replaceChildren(body, ...holders, h('p', { class: 'viewer-status' }, t('{n, plural, one {# pagina} other {# pagine}}', { n: pdf.numPages })));
     const rendered = new Set();
     const queue = [];
     let busy = false;
@@ -142,9 +143,9 @@ export function openViewer(doc, start = 0) {
         try {
           const { blob: jpg } = await renderPdfPage(pdf, n, width, { dpr: Math.min(3, window.devicePixelRatio || 2) });
           if (my !== token) break;
-          replaceChildren(holders[n - 1], h('img', { src: bag.add(jpg), alt: `Pagina ${n}`, draggable: 'false' }));
+          replaceChildren(holders[n - 1], h('img', { src: bag.add(jpg), alt: t('Pagina {n}', { n }), draggable: 'false' }));
         } catch (e) {
-          replaceChildren(holders[n - 1], h('p', { class: 'viewer-status', style: { color: '#555' } }, `Pagina ${n} non leggibile`));
+          replaceChildren(holders[n - 1], h('p', { class: 'viewer-status', style: { color: '#555' } }, t('Pagina {n} non leggibile', { n })));
         }
       }
       busy = false;
@@ -155,7 +156,7 @@ export function openViewer(doc, start = 0) {
       });
       queue.sort((a, b) => a - b);
       pump();
-    }, { root: body, rootMargin: '600px 0px' });
+    }, { root: body, rootMargin: '600px 0px' }); // i18n-ignore
     holders.forEach((el) => observer.observe(el));
   }
 
@@ -167,7 +168,7 @@ export function openViewer(doc, start = 0) {
     prevBtn.disabled = index === 0;
     nextBtn.disabled = index >= doc.files.length - 1;
     zoomBtn.replaceChildren(icon(zoom >= 3 ? 'zoom-out' : 'zoom-in', 20));
-    status('Caricamento…');
+    status(t('Caricamento…'));
     let blob;
     try {
       blob = await loadFile(f.fid);
@@ -176,7 +177,7 @@ export function openViewer(doc, start = 0) {
     }
     if (my !== token) return;
     if (!blob) {
-      status('File non trovato in questo dispositivo. Se hai un backup completo (ZIP), ripristinalo.');
+      status(t('File non trovato in questo dispositivo. Se hai un backup completo (ZIP), ripristinalo.'));
       return;
     }
     shareBtn.onclick = () => shareFile({ blob, filename: f.name, title: doc.title });
@@ -190,11 +191,11 @@ export function openViewer(doc, start = 0) {
         await showPdf(blob, my);
       } catch (e) {
         if (my === token) {
-          replaceChildren(body, h('div', { class: 'viewer-status' }, h('p', {}, 'Non riesco a mostrare questo PDF qui (potrebbe essere protetto da password).'), h('div', { style: { marginTop: '14px' } }, button({ label: 'Apri con un’altra app', kind: 'secondary', icon: 'share', onClick: () => shareFile({ blob, filename: f.name, title: doc.title }) }))));
+          replaceChildren(body, h('div', { class: 'viewer-status' }, h('p', {}, t('Non riesco a mostrare questo PDF qui (potrebbe essere protetto da password).')), h('div', { style: { marginTop: '14px' } }, button({ label: t('Apri con un’altra app'), kind: 'secondary', icon: 'share', onClick: () => shareFile({ blob, filename: f.name, title: doc.title }) }))));
         }
       }
     } else {
-      status('Anteprima non disponibile per questo tipo di file: usa il pulsante Condividi per aprirlo.');
+      status(t('Anteprima non disponibile per questo tipo di file: usa il pulsante Condividi per aprirlo.'));
     }
   }
 
@@ -220,7 +221,7 @@ async function prepareIncoming(fileList, { compress = true } = {}) {
   const out = [];
   for (const file of fileList) {
     if (file.size > MAX_FILE) {
-      toast(`«${file.name}» è troppo grande (massimo ${bytes(MAX_FILE)}).`, { tone: 'error' });
+      toast(t('«{nome}» è troppo grande (massimo {massimo}).', { nome: file.name, massimo: bytes(MAX_FILE) }), { tone: 'error' });
       continue;
     }
     const type = (file.type || '').toLowerCase();
@@ -228,7 +229,7 @@ async function prepareIncoming(fileList, { compress = true } = {}) {
       if (isImage(type)) {
         const r = await prepareImage(file, { compress });
         const base = (file.name || 'foto').replace(/\.[^.]+$/, '');
-        const name = r.type === 'image/jpeg' && !/\.jpe?g$/i.test(file.name || '') ? `${base}.jpg` : (file.name || 'foto.jpg');
+        const name = r.type === 'image/jpeg' && !/\.jpe?g$/i.test(file.name || '') ? `${base}.jpg` : (file.name || 'foto.jpg'); // i18n-ignore
         out.push({
           name, type: r.type, blob: r.blob, thumb: r.thumb, size: r.blob.size,
         });
@@ -241,10 +242,10 @@ async function prepareIncoming(fileList, { compress = true } = {}) {
           name: file.name || 'documento.pdf', type: 'application/pdf', blob: file, thumb, size: file.size,
         });
       } else {
-        toast(`«${file.name}»: formato non supportato. Usa PDF o foto.`, { tone: 'error' });
+        toast(t('«{nome}»: formato non supportato. Usa PDF o foto.', { nome: file.name }), { tone: 'error' });
       }
     } catch (e) {
-      toast(`«${file.name}» non è leggibile.`, { tone: 'error' });
+      toast(t('«{nome}» non è leggibile.', { nome: file.name }), { tone: 'error' });
     }
   }
   return out;
@@ -266,7 +267,7 @@ function hiddenPicker({ accept, capture = null, multiple = true, onFiles }) {
 
 export function openDocEditor(existing = null, { incoming = [], onDone = null, preset = {} } = {}) {
   if (!filesSupported()) {
-    toast('Questo browser non permette di salvare documenti.', { tone: 'error' });
+    toast(t('Questo browser non permette di salvare documenti.'), { tone: 'error' });
     return null;
   }
   const bag = urlBag();
@@ -277,10 +278,10 @@ export function openDocEditor(existing = null, { incoming = [], onDone = null, p
   let compress = true;
   let busy = false;
   const initial = JSON.stringify(draft);
-  const saveBtn = h('button', { type: 'button', class: 'bar-btn solid' }, 'Salva');
+  const saveBtn = h('button', { type: 'button', class: 'bar-btn solid' }, t('Salva'));
   const page = openPage({
-    title: existing ? 'Modifica documento' : 'Nuovo documento',
-    backLabel: 'Annulla',
+    title: existing ? t('Modifica documento') : t('Nuovo documento'),
+    backLabel: t('Annulla'),
     right: saveBtn,
     onBack: async (p) => {
       if (busy) return;
@@ -288,20 +289,20 @@ export function openDocEditor(existing = null, { incoming = [], onDone = null, p
         p.close();
         return;
       }
-      if (await confirmDialog({ title: 'Scartare il documento?', message: 'Le modifiche e i file appena aggiunti non verranno salvati.', confirmLabel: 'Scarta', cancelLabel: 'Continua', danger: true })) p.close();
+      if (await confirmDialog({ title: t('Scartare il documento?'), message: t('Le modifiche e i file appena aggiunti non verranno salvati.'), confirmLabel: t('Scarta'), cancelLabel: t('Continua§edit'), danger: true })) p.close();
     },
   });
   page.onClosed(() => bag.revokeAll());
 
   const titleInput = textInput({
-    value: draft.title, placeholder: 'es. Visita neurologica di controllo', maxLength: 120, label: 'Titolo del documento', onInput: (v) => { draft.title = v; },
+    value: draft.title, placeholder: t('es. Visita neurologica di controllo'), maxLength: 120, label: t('Titolo del documento'), onInput: (v) => { draft.title = v; },
   });
   const grid = h('div', { class: 'doc-grid' });
   const status = h('p', { class: 'field-hint' });
 
   const addFiles = async (files) => {
     busy = true;
-    status.textContent = `Preparazione di ${plural(files.length, 'file', 'file')}…`;
+    status.textContent = t('{n, plural, one {Preparazione di # file…} other {Preparazione di # file…}}', { n: files.length });
     const prepared = await prepareIncoming(files, { compress });
     busy = false;
     status.textContent = '';
@@ -329,7 +330,7 @@ export function openDocEditor(existing = null, { incoming = [], onDone = null, p
         h('button', {
           type: 'button',
           class: 'remove',
-          'aria-label': `Rimuovi ${f.name}`,
+          'aria-label': t('Rimuovi {nome}', { nome: f.name }),
           onclick: () => {
             draft.files.splice(i, 1);
             renderGrid();
@@ -346,7 +347,7 @@ export function openDocEditor(existing = null, { incoming = [], onDone = null, p
         h('button', {
           type: 'button',
           class: 'remove',
-          'aria-label': `Rimuovi ${p.name}`,
+          'aria-label': t('Rimuovi {nome}', { nome: p.name }),
           onclick: () => {
             pending.splice(i, 1);
             renderGrid();
@@ -354,42 +355,42 @@ export function openDocEditor(existing = null, { incoming = [], onDone = null, p
         }, icon('x', 16)),
       ));
     });
-    tiles.push(h('button', { type: 'button', class: 'doc-tile add', onclick: () => pickCamera.click() }, icon('camera', 24), 'Fotografa'));
-    tiles.push(h('button', { type: 'button', class: 'doc-tile add', onclick: () => pickFiles.click() }, icon('paperclip', 24), 'PDF o foto'));
+    tiles.push(h('button', { type: 'button', class: 'doc-tile add', onclick: () => pickCamera.click() }, icon('camera', 24), t('Fotografa')));
+    tiles.push(h('button', { type: 'button', class: 'doc-tile add', onclick: () => pickFiles.click() }, icon('paperclip', 24), t('PDF o foto')));
     replaceChildren(grid, ...tiles);
   }
 
   const contactBox = h('div');
-  const renderContact = () => replaceChildren(contactBox, h('div', { class: 'two-col' }, contactSelect({ value: draft.contactId, onChange: (v) => { draft.contactId = v; } }), button({ label: 'Nuovo', kind: 'secondary', icon: 'plus', onClick: () => openContactEditor(null, { onDone: (c) => { if (c) draft.contactId = c.id; renderContact(); } }) })));
+  const renderContact = () => replaceChildren(contactBox, h('div', { class: 'two-col' }, contactSelect({ value: draft.contactId, onChange: (v) => { draft.contactId = v; } }), button({ label: t('Nuovo'), kind: 'secondary', icon: 'plus', onClick: () => openContactEditor(null, { onDone: (c) => { if (c) draft.contactId = c.id; renderContact(); } }) })));
   renderContact();
 
   const nodes = [
     card(
-      cardTitle('File'),
+      cardTitle(t('File')),
       grid,
       status,
       h('div', { style: { marginTop: '6px' } }, group(toggleRow({
-        icon: 'image', tone: 'blue', title: 'Riduci le dimensioni delle foto', subtitle: 'Consigliato: occupano molto meno spazio e restano leggibili', checked: compress, onChange: (v) => { compress = v; },
+        icon: 'image', tone: 'blue', title: t('Riduci le dimensioni delle foto'), subtitle: t('Consigliato: occupano molto meno spazio e restano leggibili'), checked: compress, onChange: (v) => { compress = v; },
       }))),
     ),
     card(
-      field({ label: 'Titolo', control: titleInput }),
-      field({ label: 'Data del documento', control: dateInput({ value: draft.date, max: todayStr(), label: 'Data del documento', onChange: (v) => { if (v) draft.date = v; } }) }),
-      field({ label: 'Categoria', control: chipGroup({ options: DOC_CATEGORIES.map((c) => ({ value: c.id, label: c.label })), value: draft.cat, allowClear: false, onChange: (v) => { draft.cat = v || 'other'; } }) }),
-      field({ label: 'Ospedale, centro o medico', control: contactBox }),
-      field({ label: 'Note', control: textArea({ value: draft.note, rows: 3, maxLength: 2000, label: 'Note sul documento', placeholder: 'es. Esito in breve, cosa ricordare…', onInput: (v) => { draft.note = v; } }) }),
+      field({ label: t('Titolo'), control: titleInput }),
+      field({ label: t('Data del documento'), control: dateInput({ value: draft.date, max: todayStr(), label: t('Data del documento'), onChange: (v) => { if (v) draft.date = v; } }) }),
+      field({ label: t('Categoria'), control: chipGroup({ options: DOC_CATEGORIES.map((c) => ({ value: c.id, label: c.label })), value: draft.cat, allowClear: false, onChange: (v) => { draft.cat = v || 'other'; } }) }),
+      field({ label: t('Ospedale, centro o medico'), control: contactBox }),
+      field({ label: t('Note'), control: textArea({ value: draft.note, rows: 3, maxLength: 2000, label: t('Note sul documento'), placeholder: t('es. Esito in breve, cosa ricordare…'), onInput: (v) => { draft.note = v; } }) }),
     ),
     pickFiles,
     pickCamera,
   ];
   if (existing) {
     nodes.push(button({
-      label: 'Elimina documento',
+      label: t('Elimina documento'),
       kind: 'danger',
       icon: 'trash',
       block: true,
       onClick: async () => {
-        if (!(await confirmDialog({ title: 'Eliminare il documento?', message: 'Verranno eliminati anche i file allegati da questo telefono.', confirmLabel: 'Elimina', danger: true }))) return;
+        if (!(await confirmDialog({ title: t('Eliminare il documento?'), message: t('Verranno eliminati anche i file allegati da questo telefono.'), confirmLabel: t('Elimina'), danger: true }))) return;
         page.close();
         removeDocWithUndo(existing.id);
         if (onDone) onDone(null);
@@ -403,16 +404,16 @@ export function openDocEditor(existing = null, { incoming = [], onDone = null, p
   saveBtn.addEventListener('click', async () => {
     if (busy) return;
     if (!draft.title.trim()) {
-      toast('Dai un titolo al documento.', { tone: 'error' });
+      toast(t('Dai un titolo al documento.'), { tone: 'error' });
       return;
     }
     if (!draft.files.length && !pending.length && !draft.note.trim()) {
-      toast('Aggiungi almeno un file o una nota.', { tone: 'error' });
+      toast(t('Aggiungi almeno un file o una nota.'), { tone: 'error' });
       return;
     }
     busy = true;
     saveBtn.disabled = true;
-    saveBtn.textContent = 'Salvo…';
+    saveBtn.textContent = t('Salvo…');
     const written = [];
     try {
       const refs = [];
@@ -438,7 +439,7 @@ export function openDocEditor(existing = null, { incoming = [], onDone = null, p
       }
       busy = false;
       page.close();
-      toast('Documento salvato');
+      toast(t('Documento salvato'));
       if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});
       if (onDone) onDone(saved);
     } catch (e) {
@@ -446,8 +447,8 @@ export function openDocEditor(existing = null, { incoming = [], onDone = null, p
       if (written.length) deleteFiles(written).catch(() => {});
       busy = false;
       saveBtn.disabled = false;
-      saveBtn.textContent = 'Salva';
-      toast(`Impossibile salvare: ${e && e.message ? e.message : 'spazio esaurito?'}`, { tone: 'error', duration: 8000 });
+      saveBtn.textContent = t('Salva');
+      toast(e && e.message ? t('Impossibile salvare: {motivo}', { motivo: e.message }) : t('Impossibile salvare: spazio esaurito?'), { tone: 'error', duration: 8000 });
     }
   });
   return page;
@@ -460,10 +461,10 @@ export function removeDocWithUndo(id) {
   fids.forEach((fid) => protectedFids.add(fid));
   let settled = false;
   const release = () => fids.forEach((fid) => protectedFids.delete(fid));
-  toast('Documento eliminato', {
+  toast(t('Documento eliminato'), {
     duration: 6000,
     action: {
-      label: 'Annulla',
+      label: t('Annulla'),
       onClick: () => {
         if (settled) return;
         settled = true;
@@ -484,7 +485,7 @@ export function removeDocWithUndo(id) {
 /* ---------- dettaglio ---------- */
 
 export function openDocDetail(id) {
-  const page = openPage({ title: 'Documento' });
+  const page = openPage({ title: t('Documento') });
   const bag = urlBag();
   page.onClosed(() => bag.revokeAll());
   const render = () => {
@@ -497,11 +498,12 @@ export function openDocDetail(id) {
     }
     const cat = docCategory(doc.cat);
     page.setTitle(doc.title);
-    page.setRight(h('button', { type: 'button', class: 'bar-btn', onclick: () => openDocEditor(doc) }, 'Modifica'));
+    page.setRight(h('button', { type: 'button', class: 'bar-btn', onclick: () => openDocEditor(doc) }, t('Modifica')));
     const tiles = doc.files.map((f, i) => {
       const th = h('span', { style: { display: 'contents' } }, fileIcon(f));
       fillThumb(th, f, bag);
-      return h('button', { type: 'button', class: 'doc-tile', 'aria-label': `Apri ${f.name}`, onclick: () => openViewer(doc, i) }, th, h('span', { class: 'badge' }, isPdf(f.type, f.name) ? 'PDF' : 'FOTO'));
+      const badge = isPdf(f.type, f.name) ? 'PDF' : t('FOTO'); // i18n-ignore
+      return h('button', { type: 'button', class: 'doc-tile', 'aria-label': t('Apri {nome}', { nome: f.name }), onclick: () => openViewer(doc, i) }, th, h('span', { class: 'badge' }, badge));
     });
     const who = contactName(db, doc.contactId);
     replaceChildren(
@@ -514,11 +516,11 @@ export function openDocDetail(id) {
             h('div', { class: 'muted small' }, [fmtDateShort(doc.date), cat.label, who].filter(Boolean).join(' · ')))),
         doc.note ? h('p', { class: 'pre', style: { marginTop: '12px' } }, doc.note) : null,
       ),
-      doc.files.length ? card(cardTitle(plural(doc.files.length, 'file', 'file')), h('div', { class: 'doc-grid' }, ...tiles)) : null,
+      doc.files.length ? card(cardTitle(t('{n, plural, one {# file} other {# file}}', { n: doc.files.length })), h('div', { class: 'doc-grid' }, ...tiles)) : null,
       doc.files.length ? h('div', { class: 'today-actions mb' },
-        button({ label: 'Apri', kind: 'primary', icon: 'external', block: true, onClick: () => openViewer(doc, 0) }),
+        button({ label: t('Apri'), kind: 'primary', icon: 'external', block: true, onClick: () => openViewer(doc, 0) }),
         button({
-          label: 'Condividi o salva in File',
+          label: t('Condividi o salva in File'),
           kind: 'secondary',
           icon: 'share',
           block: true,
@@ -529,7 +531,7 @@ export function openDocDetail(id) {
               if (b) blobs.push(new File([b], f.name, { type: f.type }));
             }
             if (!blobs.length) {
-              toast('File non trovati su questo dispositivo.', { tone: 'error' });
+              toast(t('File non trovati su questo dispositivo.'), { tone: 'error' });
               return;
             }
             if (blobs.length > 1 && navigator.canShare && navigator.canShare({ files: blobs })) {
@@ -541,7 +543,7 @@ export function openDocDetail(id) {
             await shareFile({ blob: blobs[0], filename: blobs[0].name, title: doc.title });
           },
         })) : null,
-      footnote(`Aggiunto il ${fmtDateShort(doc.createdAt.slice(0, 10))}. I file sono salvati solo su questo telefono: includili nel backup completo (ZIP).`),
+      footnote(t('Aggiunto il {data}. I file sono salvati solo su questo telefono: includili nel backup completo (ZIP).', { data: fmtDateShort(doc.createdAt.slice(0, 10)) })),
     );
   };
   render();
@@ -553,7 +555,7 @@ export function openDocDetail(id) {
 /* ---------- elenco ---------- */
 
 export function openDocuments({ contactId = null } = {}) {
-  const page = openPage({ title: 'Documenti' });
+  const page = openPage({ title: t('Documenti') });
   const bag = urlBag();
   page.onClosed(() => bag.revokeAll());
   const state = { q: '', cat: 'all' };
@@ -563,7 +565,7 @@ export function openDocuments({ contactId = null } = {}) {
   const pickFiles = hiddenPicker({ accept: 'application/pdf,image/*', onFiles: startNew });
   const pickCamera = hiddenPicker({ accept: 'image/*', capture: 'environment', multiple: false, onFiles: startNew });
   const search = h('input', {
-    class: 'input', type: 'search', placeholder: 'Cerca nei documenti', 'aria-label': 'Cerca nei documenti', autocomplete: 'off',
+    class: 'input', type: 'search', placeholder: t('Cerca nei documenti'), 'aria-label': t('Cerca nei documenti'), autocomplete: 'off',
   });
   search.addEventListener('input', () => {
     state.q = search.value;
@@ -578,7 +580,7 @@ export function openDocuments({ contactId = null } = {}) {
     const all = db.docs.filter((d) => !contactId || d.contactId === contactId);
     const cats = DOC_CATEGORIES.filter((c) => all.some((d) => d.cat === c.id));
     replaceChildren(filterBox, cats.length > 1 ? chipGroup({
-      options: [{ value: 'all', label: 'Tutti' }, ...cats.map((c) => ({ value: c.id, label: c.label }))],
+      options: [{ value: 'all', label: t('Tutti') }, ...cats.map((c) => ({ value: c.id, label: c.label }))],
       value: state.cat,
       allowClear: false,
       onChange: (v) => {
@@ -593,13 +595,13 @@ export function openDocuments({ contactId = null } = {}) {
     if (!all.length) {
       replaceChildren(listBox, emptyState({
         icon: 'folder',
-        title: 'La tua cartella clinica',
-        text: 'Carica referti, risonanze, piani terapeutici e lettere di dimissione: PDF scaricati dal Fascicolo sanitario o foto dei documenti di carta.',
+        title: t('La tua cartella clinica'),
+        text: t('Carica referti, risonanze, piani terapeutici e lettere di dimissione: PDF scaricati dal Fascicolo sanitario o foto dei documenti di carta.'),
       }));
       return;
     }
     if (!list.length) {
-      replaceChildren(listBox, emptyState({ icon: 'search', title: 'Nessun risultato', text: 'Prova a cambiare la ricerca o il filtro.' }));
+      replaceChildren(listBox, emptyState({ icon: 'search', title: t('Nessun risultato'), text: t('Prova a cambiare la ricerca o il filtro.') }));
       return;
     }
     const groups = new Map();
@@ -634,11 +636,11 @@ export function openDocuments({ contactId = null } = {}) {
     const who = contactId ? contactName(db, contactId) : '';
     replaceChildren(
       page.body,
-      who ? h('p', { class: 'page-intro' }, `Documenti di ${who}`) : null,
-      !filesSupported() ? alertBox({ tone: 'warn', icon: 'alert', text: 'Questo browser non permette di salvare documenti. Apri l’app dall’icona sulla schermata Home.' }) : null,
+      who ? h('p', { class: 'page-intro' }, t('Documenti di {nome}', { nome: who })) : null,
+      !filesSupported() ? alertBox({ tone: 'warn', icon: 'alert', text: t('Questo browser non permette di salvare documenti. Apri l’app dall’icona sulla schermata Home.') }) : null,
       h('div', { class: 'btn-row mb' },
-        button({ label: 'Fotografa', kind: 'secondary', icon: 'camera', onClick: () => pickCamera.click() }),
-        button({ label: 'Carica PDF o foto', kind: 'primary', icon: 'doc-plus', onClick: () => pickFiles.click() })),
+        button({ label: t('Fotografa'), kind: 'secondary', icon: 'camera', onClick: () => pickCamera.click() }),
+        button({ label: t('Carica PDF o foto'), kind: 'primary', icon: 'doc-plus', onClick: () => pickFiles.click() })),
       db.docs.length > 3 ? h('div', { class: 'mb' }, search) : null,
       filterBox,
       listBox,
@@ -650,7 +652,12 @@ export function openDocuments({ contactId = null } = {}) {
     page.body.scrollTop = top;
     storageInfo().then((s) => {
       const size = db.docs.reduce((a, d) => a + d.files.reduce((b, f) => b + (f.size || 0), 0), 0);
-      usage.textContent = `${plural(db.docs.length, 'documento', 'documenti')} · ${bytes(size)}${s && s.quota ? ` · spazio disponibile per l’app: ${bytes(Math.max(0, s.quota - s.usage))}` : ''}. Ricorda il backup completo (ZIP) da Impostazioni › Dati e backup.`;
+      const params = {
+        n: db.docs.length, dimensione: bytes(size), percorso: `${t('Impostazioni')} › ${t('Dati e backup')}`,
+      };
+      usage.textContent = s && s.quota
+        ? t('{n, plural, one {# documento} other {# documenti}} · {dimensione} · spazio disponibile per l’app: {spazio}. Ricorda il backup completo (ZIP) da {percorso}.', { ...params, spazio: bytes(Math.max(0, s.quota - s.usage)) })
+        : t('{n, plural, one {# documento} other {# documenti}} · {dimensione}. Ricorda il backup completo (ZIP) da {percorso}.', params);
     });
   };
   render();

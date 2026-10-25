@@ -1,0 +1,276 @@
+[
+  {
+    "name": "diário com cabeçalhos de ano e de mês",
+    "lines": [
+      "Diário de enxaqueca",
+      "2025",
+      "3/03 enxaqueca forte 8/10, lado esquerdo, náuseas e fotofobia (ibuprofeno 600 não fez efeito)",
+      "4/03 igual",
+      "5/03 dor leve na testa",
+      "6/03",
+      "12-13/03 dor nas têmporas e na nuca, menstruação veio",
+      "No início de abril",
+      "2/04 de manhã, lado direito, aura visual, tomei sumatriptana",
+      "(depois melhorou)",
+      "2024",
+      "03/01/2024 acordei com dor muito forte atrás do olho direito",
+      "4/01 leve"
+    ],
+    "count": 8,
+    "order": "dmy",
+    "firstDate": "2024-01-03",
+    "lastDate": "2025-04-02",
+    "expect": [
+      { "date": "2025-03-03", "intensity": 8, "side": "sx", "symptoms": ["Nausea", "Sensibilità alla luce"], "meds": [{ "name": "Ibuprofene", "count": 1, "dose": "600 mg", "effect": 0 }] },
+      { "date": "2025-03-04", "intensity": 8, "side": "sx", "flags": { "ditto": true } },
+      { "date": "2025-03-05", "intensity": 2, "areas": ["Fronte"] },
+      { "date": "2025-03-06", "flags": { "noDetails": true } },
+      { "date": "2025-03-12", "endDate": "2025-03-13", "areasHas": ["Tempie", "Nuca"], "menses": true, "mensesToday": true },
+      { "date": "2025-04-02", "side": "dx", "aura": ["Visiva (luci, zig-zag, macchie)"], "type": "con_aura", "meds": [{ "name": "Sumatriptan" }] },
+      { "date": "2024-01-03", "intensity": 8, "side": "dx", "areas": ["Dietro un occhio"] },
+      { "date": "2024-01-04", "intensity": 2 }
+    ]
+  },
+  {
+    "name": "meses como títulos e só o dia nas linhas",
+    "lines": [
+      "Junho 2024",
+      "26 enxaqueca forte, ibuprofeno",
+      "27 sem dor, tudo bem",
+      "28 leve",
+      "Julho",
+      "3 latejante à esquerda, náuseas",
+      "2 ibuprofeno por uma dor forte"
+    ],
+    "count": 4,
+    "expect": [
+      { "date": "2024-06-26", "intensity": 7, "meds": [{ "name": "Ibuprofene" }] },
+      { "date": "2024-06-27", "kind": "free" },
+      { "date": "2024-06-28", "intensity": 2 },
+      { "date": "2024-07-03", "side": "sx", "qualityHas": ["Pulsante"], "symptomsHas": ["Nausea"], "meds": [{ "name": "Ibuprofene", "count": 2 }] }
+    ]
+  },
+  {
+    "name": "sem ano: deduzido da ordem e da data de hoje",
+    "today": "2026-10-25",
+    "lines": ["12/10 forte", "14/10 ibuprofeno", "2/11 leve", "5/01 forte", "23/10 suportável"],
+    "count": 5,
+    "expect": [
+      { "date": "2025-10-12", "intensity": 7 },
+      { "date": "2025-10-14", "meds": [{ "name": "Ibuprofene" }] },
+      { "date": "2025-11-02", "intensity": 2 },
+      { "date": "2026-01-05", "intensity": 7 },
+      { "date": "2026-10-23", "intensity": 4 }
+    ]
+  },
+  {
+    "name": "datas em formas diferentes",
+    "lines": [
+      "26/06/24 forte",
+      "- 27.06.2024 leve",
+      "• 28-6-2024 ibuprofeno",
+      "1. 29 de junho de 2024 latejante",
+      "Domingo, 30 de junho de 2024: esquerda",
+      "2024-07-01 direita",
+      "de 3 a 5 de julho de 2024 enxaqueca por 3 dias",
+      "7 jul 2024 náuseas",
+      "1º de agosto de 2024 forte",
+      "dia 2/8 leve",
+      "Terça-feira, 6 de agosto: forte"
+    ],
+    "count": 11,
+    "expect": [
+      { "date": "2024-06-26", "intensity": 7 },
+      { "date": "2024-06-27", "intensity": 2 },
+      { "date": "2024-06-28", "meds": [{ "name": "Ibuprofene" }] },
+      { "date": "2024-06-29", "qualityHas": ["Pulsante"] },
+      { "date": "2024-06-30", "side": "sx" },
+      { "date": "2024-07-01", "side": "dx" },
+      { "date": "2024-07-03", "endDate": "2024-07-05" },
+      { "date": "2024-07-07", "symptomsHas": ["Nausea"] },
+      { "date": "2024-08-01", "intensity": 7 },
+      { "date": "2024-08-02", "intensity": 2 },
+      { "date": "2024-08-06", "intensity": 7 }
+    ]
+  },
+  {
+    "name": "ordinais, meses abreviados com ponto e dias da semana",
+    "lines": [
+      "Março de 2025",
+      "1º forte enxaqueca, lado esquerdo",
+      "2 idem",
+      "15 de mar. dor atrás do olho direito, enjoo",
+      "Abril de 2025",
+      "3 de abr leve",
+      "Quarta-feira, 9 de abril: crise forte, tomei Novalgina 1000, alívio depois de 2 h"
+    ],
+    "count": 5,
+    "expect": [
+      { "date": "2025-03-01", "intensity": 7, "side": "sx" },
+      { "date": "2025-03-02", "intensity": 7, "side": "sx", "flags": { "ditto": true } },
+      { "date": "2025-03-15", "areas": ["Dietro un occhio"], "side": "dx", "symptomsHas": ["Nausea"] },
+      { "date": "2025-04-03", "intensity": 2 },
+      { "date": "2025-04-09", "intensity": 7, "meds": [{ "name": "Metamizolo", "dose": "1000 mg", "effect": 2 }] }
+    ]
+  },
+  {
+    "name": "medicamentos: quantidades, doses, efeitos e nomes fora do catálogo",
+    "lines": [
+      "2025",
+      "1/02 tomei 2 ibuprofeno e um triptano",
+      "2/02 na testa (ibuprofeno)x2 não passou",
+      "3/02 Novalgina 575 funcionou",
+      "4/02 imigran 100 sem efeito, depois tomei ibuprofeno",
+      "5/02 tomei Zalexil 20 mg",
+      "6/02 paracetamol, nenhum efeito",
+      "7/02 peguei frio, cabeça pesada",
+      "8/02 dois comprimidos de ibuprofeno e tylenol",
+      "9/02 tomei um Zalexil e uma aspirina"
+    ],
+    "count": 9,
+    "expect": [
+      { "meds": [{ "name": "Ibuprofene", "count": 2 }, { "name": "Triptano", "count": 1 }] },
+      { "meds": [{ "name": "Ibuprofene", "count": 2, "effect": 0 }], "areas": ["Fronte"] },
+      { "meds": [{ "name": "Metamizolo", "dose": "575 mg", "effect": 2 }] },
+      { "meds": [{ "name": "Sumatriptan", "dose": "100 mg", "effect": 0 }, { "name": "Ibuprofene", "effect": null }] },
+      { "meds": [{ "name": "Zalexil", "dose": "20 mg" }] },
+      { "meds": [{ "name": "Paracetamolo", "effect": 0 }] },
+      { "meds": [], "triggersHas": ["Freddo"], "qualityHas": ["Pressante / a cerchio"] },
+      { "meds": [{ "name": "Ibuprofene", "count": 2 }, { "name": "Paracetamolo" }] },
+      { "meds": [{ "name": "Zalexil" }, { "name": "Acido acetilsalicilico" }] }
+    ]
+  },
+  {
+    "name": "fatores, sintomas, negações e menstruação",
+    "lines": [
+      "2025",
+      "10/05 dormi pouco, estresse, náuseas e vômito",
+      "11/05 sem náuseas, depois do café",
+      "12/05 sem café, dor de cabeça que começa na nuca",
+      "13/05 (amanhã menstruação) na testa",
+      "14/05 primeiro dia da menstruação, forte",
+      "15/05 sensibilidade à luz e ao barulho, calor"
+    ],
+    "count": 6,
+    "expect": [
+      { "triggers": ["Poco sonno", "Stress"], "symptoms": ["Nausea", "Vomito"] },
+      { "symptoms": [], "triggers": ["Caffeina"] },
+      { "triggers": ["Astinenza da caffeina"], "areasHas": ["Nuca"] },
+      { "menses": true, "mensesToday": false, "triggersHas": ["Ciclo mestruale"] },
+      { "menses": true, "mensesToday": true, "intensity": 7 },
+      { "symptoms": ["Sensibilità alla luce", "Sensibilità ai rumori"], "triggers": ["Caldo"] }
+    ]
+  },
+  {
+    "name": "aura, lado da dor e pronto-socorro",
+    "lines": [
+      "2025",
+      "20/06 aura visual à direita, dor à esquerda, tomei triptano",
+      "21/06 sem dor mas distúrbios visuais e formigamento na mão direita, fui ao pronto-socorro",
+      "22/06 sem aura, têmpora direita"
+    ],
+    "count": 3,
+    "expect": [
+      { "side": "sx", "aura": ["Visiva (luci, zig-zag, macchie)"], "type": "con_aura" },
+      { "intensity": 1, "side": "", "aura": ["Visiva (luci, zig-zag, macchie)", "Sensitiva (formicolii)"], "er": true },
+      { "side": "dx", "aura": [], "type": "senza_aura", "areas": ["Tempie"] }
+    ]
+  },
+  {
+    "name": "linhas quebradas, listas e várias datas em uma linha",
+    "lines": [
+      "2025",
+      "8/03 enxaqueca forte que durou o dia todo",
+      "passou sozinha à noite",
+      "",
+      "9/03 leve; 10/03 forte; 11/03 nada",
+      "avaliação 7 com ibuprofeno",
+      "consulta com o neurologista dia 15/03 às 10h",
+      "16/03 retorno, ressonância marcada"
+    ],
+    "count": 5,
+    "expect": [
+      { "date": "2025-03-08", "intensity": 7, "approxDur": "12to24" },
+      { "date": "2025-03-09", "intensity": 2 },
+      { "date": "2025-03-10", "intensity": 7 },
+      { "date": "2025-03-11" },
+      { "date": "2025-03-16", "kind": "other" }
+    ]
+  },
+  {
+    "name": "intensidade em números e palavras",
+    "lines": [
+      "2025",
+      "1/06 dor 7 de 10",
+      "2/06 um 8 de 10 com náuseas",
+      "3/06 intensidade 6",
+      "4/06 dor de 9, insuportável",
+      "5/06 dor suportável",
+      "6/06 muito forte, a pior da minha vida",
+      "7/06 leve, depois piorou e ficou muito forte"
+    ],
+    "count": 7,
+    "expect": [
+      { "intensity": 7 },
+      { "intensity": 8, "symptomsHas": ["Nausea"] },
+      { "intensity": 6 },
+      { "intensity": 9 },
+      { "intensity": 4 },
+      { "intensity": 10 },
+      { "intensity": 8 }
+    ]
+  },
+  {
+    "name": "datas impossíveis e desordenadas",
+    "lines": ["2025", "31/04 forte", "29/02 leve", "30/04 forte", "2/04 ibuprofeno"],
+    "count": 4,
+    "expect": [
+      { "date": null },
+      { "date": null },
+      { "date": "2025-04-30" },
+      { "date": "2025-04-02" }
+    ]
+  },
+  {
+    "name": "só menstruação, dias sem dor e consultas não são crises",
+    "lines": [
+      "2025",
+      "5/05 menstruação",
+      "6/05 início da menstruação",
+      "7/05 amanhã menstruação",
+      "8/05 sem dor",
+      "9/05 tudo bem",
+      "10/05 consulta com o neurologista",
+      "11/05 dor de cabeça, menstruação"
+    ],
+    "count": 7,
+    "expect": [
+      { "date": "2025-05-05", "kind": "menses", "mensesToday": true },
+      { "date": "2025-05-06", "kind": "menses", "mensesToday": true },
+      { "date": "2025-05-07", "kind": "other", "mensesToday": false },
+      { "date": "2025-05-08", "kind": "free" },
+      { "date": "2025-05-09", "kind": "free" },
+      { "date": "2025-05-10", "kind": "other" },
+      { "date": "2025-05-11", "kind": "attack", "mensesToday": true }
+    ]
+  },
+  {
+    "name": "português de Portugal: pequeno-almoço, urgências e internamento",
+    "lines": [
+      "Setembro de 2024",
+      "3 de setembro: enxaqueca forte, lado direito, enjoo, fotofobia; tomei Ben-u-ron 1000, não fez efeito",
+      "4 de setembro: dormi mal, stress no trabalho, não tomei o pequeno-almoço",
+      "5/9 hoje sem dores",
+      "6 de setembro - ida às urgências, internada uma noite",
+      "7/9 tomei café da manhã, tudo normal"
+    ],
+    "count": 5,
+    "expect": [
+      { "date": "2024-09-03", "intensity": 7, "side": "dx", "symptoms": ["Nausea", "Sensibilità alla luce"], "meds": [{ "name": "Paracetamolo", "dose": "1000 mg", "effect": 0 }] },
+      { "date": "2024-09-04", "triggers": ["Poco sonno", "Stress", "Pasto saltato"] },
+      { "date": "2024-09-05", "kind": "free" },
+      { "date": "2024-09-06", "er": true, "hosp": true },
+      { "date": "2024-09-07", "triggers": [], "kind": "free" }
+    ]
+  }
+]

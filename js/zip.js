@@ -2,14 +2,16 @@
  * ZIP minimale senza dipendenze: scrive archivi "store" (i PDF e le foto sono già compressi)
  * e legge archivi store o deflate (con DecompressionStream, se disponibile).
  */
+import { t } from './i18n.js';
+
 const CRC_TABLE = (() => {
-  const t = new Uint32Array(256);
+  const table = new Uint32Array(256);
   for (let n = 0; n < 256; n += 1) {
     let c = n;
     for (let k = 0; k < 8; k += 1) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1;
-    t[n] = c >>> 0;
+    table[n] = c >>> 0;
   }
-  return t;
+  return table;
 })();
 
 export function crc32(bytes, seed = 0) {
@@ -41,7 +43,7 @@ async function bytesOf(data) {
  * Restituisce un Blob application/zip.
  */
 export async function createZip(entries, { onProgress = null } = {}) {
-  if (entries.length > 65000) throw new Error('Troppi file per un singolo archivio.');
+  if (entries.length > 65000) throw new Error(t('Troppi file per un singolo archivio.'));
   const parts = [];
   const central = [];
   let offset = 0;
@@ -51,7 +53,7 @@ export async function createZip(entries, { onProgress = null } = {}) {
     const bytes = await bytesOf(e.data);
     const crc = crc32(bytes);
     const size = bytes.length;
-    if (offset + size + 30 + name.length > LIMIT) throw new Error('L’archivio supera i 4 GB.');
+    if (offset + size + 30 + name.length > LIMIT) throw new Error(t('L’archivio supera i 4 GB.'));
     const { time, date } = dosTime(e.date || new Date());
     const h = new DataView(new ArrayBuffer(30));
     h.setUint32(0, 0x04034b50, true);
@@ -108,7 +110,7 @@ async function sliceBytes(blob, start, end) {
 
 /** Legge l'indice di un archivio ZIP senza caricarlo tutto in memoria. */
 export async function readZip(blob) {
-  if (!blob || blob.size < 22) throw new Error('Il file non è un archivio ZIP valido.');
+  if (!blob || blob.size < 22) throw new Error(t('Il file non è un archivio ZIP valido.'));
   const tailLen = Math.min(blob.size, 65557);
   const tail = await sliceBytes(blob, blob.size - tailLen, blob.size);
   let at = -1;
@@ -118,19 +120,19 @@ export async function readZip(blob) {
       break;
     }
   }
-  if (at < 0) throw new Error('Il file non è un archivio ZIP valido.');
+  if (at < 0) throw new Error(t('Il file non è un archivio ZIP valido.'));
   const ev = new DataView(tail.buffer, tail.byteOffset + at, 22);
   const count = ev.getUint16(10, true);
   const cdSize = ev.getUint32(12, true);
   const cdOffset = ev.getUint32(16, true);
-  if (cdOffset + cdSize > blob.size) throw new Error('Archivio ZIP danneggiato.');
+  if (cdOffset + cdSize > blob.size) throw new Error(t('Archivio ZIP danneggiato.'));
   const cd = await sliceBytes(blob, cdOffset, cdOffset + cdSize);
   const entries = [];
   let p = 0;
   for (let i = 0; i < count; i += 1) {
-    if (p + 46 > cd.length) throw new Error('Archivio ZIP danneggiato.');
+    if (p + 46 > cd.length) throw new Error(t('Archivio ZIP danneggiato.'));
     const v = new DataView(cd.buffer, cd.byteOffset + p, 46);
-    if (v.getUint32(0, true) !== 0x02014b50) throw new Error('Archivio ZIP danneggiato.');
+    if (v.getUint32(0, true) !== 0x02014b50) throw new Error(t('Archivio ZIP danneggiato.'));
     const nlen = v.getUint16(28, true);
     const elen = v.getUint16(30, true);
     const clen = v.getUint16(32, true);
@@ -153,20 +155,20 @@ export async function readZip(blob) {
 export async function readZipEntry(blob, entry, type = '') {
   const head = await sliceBytes(blob, entry.offset, entry.offset + 30);
   const v = new DataView(head.buffer, head.byteOffset, 30);
-  if (v.getUint32(0, true) !== 0x04034b50) throw new Error('Archivio ZIP danneggiato.');
+  if (v.getUint32(0, true) !== 0x04034b50) throw new Error(t('Archivio ZIP danneggiato.'));
   const start = entry.offset + 30 + v.getUint16(26, true) + v.getUint16(28, true);
   const raw = blob.slice(start, start + entry.csize);
   let out;
   if (entry.method === 0) {
     out = raw;
   } else if (entry.method === 8) {
-    if (typeof DecompressionStream === 'undefined') throw new Error('Questo archivio è compresso in un formato non supportato da questo browser.');
+    if (typeof DecompressionStream === 'undefined') throw new Error(t('Questo archivio è compresso in un formato non supportato da questo browser.'));
     out = await new Response(raw.stream().pipeThrough(new DecompressionStream('deflate-raw'))).blob();
   } else {
-    throw new Error('Metodo di compressione ZIP non supportato.');
+    throw new Error(t('Metodo di compressione ZIP non supportato.'));
   }
   const bytes = new Uint8Array(await out.arrayBuffer());
-  if (bytes.length !== entry.size || crc32(bytes) !== entry.crc) throw new Error(`Il file «${entry.name}» nell’archivio è danneggiato.`);
+  if (bytes.length !== entry.size || crc32(bytes) !== entry.crc) throw new Error(t('Il file «{nome}» nell’archivio è danneggiato.', { nome: entry.name }));
   return new Blob([bytes], { type });
 }
 

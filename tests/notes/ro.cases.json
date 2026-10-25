@@ -1,0 +1,268 @@
+[
+  {
+    "name": "jurnal cu titluri de an și de lună",
+    "lines": [
+      "Jurnal de migrenă",
+      "2025",
+      "3.03 migrenă puternică 8/10, partea stângă, greață și fotofobie (ibuprofen 600 nu a făcut efect)",
+      "4.03 la fel",
+      "5.03 durere ușoară în frunte",
+      "6.03",
+      "12-13.03 durere în tâmple și în ceafă, mi-a venit ciclul",
+      "Început de aprilie",
+      "2.04 dimineața, partea dreaptă, aură vizuală, am luat sumatriptan",
+      "(apoi a trecut)",
+      "2024",
+      "03.01.2024 m-am trezit cu durere foarte puternică în spatele ochiului drept",
+      "4.01 ușor"
+    ],
+    "count": 8,
+    "order": "dmy",
+    "firstDate": "2024-01-03",
+    "lastDate": "2025-04-02",
+    "expect": [
+      { "date": "2025-03-03", "intensity": 8, "side": "sx", "symptoms": ["Nausea", "Sensibilità alla luce"], "meds": [{ "name": "Ibuprofene", "count": 1, "dose": "600 mg", "effect": 0 }] },
+      { "date": "2025-03-04", "intensity": 8, "side": "sx", "flags": { "ditto": true } },
+      { "date": "2025-03-05", "intensity": 2, "areas": ["Fronte"] },
+      { "date": "2025-03-06", "flags": { "noDetails": true } },
+      { "date": "2025-03-12", "endDate": "2025-03-13", "areasHas": ["Tempie", "Nuca"], "menses": true, "mensesToday": true },
+      { "date": "2025-04-02", "side": "dx", "aura": ["Visiva (luci, zig-zag, macchie)"], "type": "con_aura", "meds": [{ "name": "Sumatriptan" }] },
+      { "date": "2024-01-03", "intensity": 8, "side": "dx", "areas": ["Dietro un occhio"] },
+      { "date": "2024-01-04", "intensity": 2 }
+    ]
+  },
+  {
+    "name": "lunile ca titluri și doar ziua în rânduri",
+    "lines": [
+      "Iunie 2024",
+      "26 migrenă puternică, ibuprofen",
+      "27 fără durere, totul bine",
+      "28 ușoară",
+      "Iulie",
+      "3 pulsatilă pe stânga, greață",
+      "2 ibuprofen pentru o durere puternică"
+    ],
+    "count": 4,
+    "expect": [
+      { "date": "2024-06-26", "intensity": 7, "meds": [{ "name": "Ibuprofene" }] },
+      { "date": "2024-06-27", "kind": "free" },
+      { "date": "2024-06-28", "intensity": 2 },
+      { "date": "2024-07-03", "side": "sx", "qualityHas": ["Pulsante"], "symptomsHas": ["Nausea"], "meds": [{ "name": "Ibuprofene", "count": 2 }] }
+    ]
+  },
+  {
+    "name": "fără an: dedus din ordine și din data de azi",
+    "today": "2026-10-25",
+    "lines": ["12.10 puternică", "14.10 ibuprofen", "2.11 ușoară", "5.01 puternică", "23.10 suportabilă"],
+    "count": 5,
+    "expect": [
+      { "date": "2025-10-12", "intensity": 7 },
+      { "date": "2025-10-14", "meds": [{ "name": "Ibuprofene" }] },
+      { "date": "2025-11-02", "intensity": 2 },
+      { "date": "2026-01-05", "intensity": 7 },
+      { "date": "2026-10-23", "intensity": 4 }
+    ]
+  },
+  {
+    "name": "forme diferite de dată",
+    "lines": [
+      "26.06.24 puternică",
+      "- 27.06.2024 ușoară",
+      "• 28-6-2024 ibuprofen",
+      "1. 29 iunie 2024 pulsatilă",
+      "Duminică, 30 iunie 2024: stânga",
+      "2024-07-01 dreapta",
+      "de la 3 la 5 iulie 2024 migrenă timp de 3 zile",
+      "7 iul. 2024 greață",
+      "Joi, 8 august: puternică"
+    ],
+    "count": 9,
+    "expect": [
+      { "date": "2024-06-26", "intensity": 7 },
+      { "date": "2024-06-27", "intensity": 2 },
+      { "date": "2024-06-28", "meds": [{ "name": "Ibuprofene" }] },
+      { "date": "2024-06-29", "qualityHas": ["Pulsante"] },
+      { "date": "2024-06-30", "side": "sx" },
+      { "date": "2024-07-01", "side": "dx" },
+      { "date": "2024-07-03", "endDate": "2024-07-05" },
+      { "date": "2024-07-07", "symptomsHas": ["Nausea"] },
+      { "date": "2024-08-08", "intensity": 7 }
+    ]
+  },
+  {
+    "name": "luna ca titlu, luni abreviate cu punct și zilele săptămânii",
+    "lines": [
+      "Luna decembrie 2024",
+      "1 migrenă puternică, partea stângă",
+      "2 la fel",
+      "15 dec. durere în spatele ochiului drept, greață",
+      "Luna ianuarie 2025",
+      "3 ian. ușoară",
+      "Miercuri, 8 ianuarie: criză puternică, am luat algocalmin 1000, a trecut după 2 ore"
+    ],
+    "count": 5,
+    "expect": [
+      { "date": "2024-12-01", "intensity": 7, "side": "sx" },
+      { "date": "2024-12-02", "intensity": 7, "side": "sx", "flags": { "ditto": true } },
+      { "date": "2024-12-15", "areas": ["Dietro un occhio"], "side": "dx", "symptomsHas": ["Nausea"] },
+      { "date": "2025-01-03", "intensity": 2 },
+      { "date": "2025-01-08", "intensity": 7, "meds": [{ "name": "Metamizolo", "dose": "1000 mg", "effect": 2 }] }
+    ]
+  },
+  {
+    "name": "medicamente: cantități, doze, efecte și nume din afara catalogului",
+    "lines": [
+      "2025",
+      "1.02 am luat 2 ibuprofen și un triptan",
+      "2.02 în frunte (ibuprofen)x2 nu a trecut",
+      "3.02 algocalmin 575 a mers bine",
+      "4.02 imigran 100 fără efect, apoi am luat ibuprofen",
+      "5.02 am luat Zalexil 20 mg",
+      "6.02 paracetamol, niciun efect",
+      "7.02 am luat frig, cap greu",
+      "8.02 două comprimate de ibuprofen și panadol",
+      "9.02 am luat un Zalexil și o aspirină"
+    ],
+    "count": 9,
+    "expect": [
+      { "meds": [{ "name": "Ibuprofene", "count": 2 }, { "name": "Triptano", "count": 1 }] },
+      { "meds": [{ "name": "Ibuprofene", "count": 2, "effect": 0 }], "areas": ["Fronte"] },
+      { "meds": [{ "name": "Metamizolo", "dose": "575 mg", "effect": 2 }] },
+      { "meds": [{ "name": "Sumatriptan", "dose": "100 mg", "effect": 0 }, { "name": "Ibuprofene", "effect": null }] },
+      { "meds": [{ "name": "Zalexil", "dose": "20 mg" }] },
+      { "meds": [{ "name": "Paracetamolo", "effect": 0 }] },
+      { "meds": [], "triggersHas": ["Freddo"], "qualityHas": ["Pressante / a cerchio"] },
+      { "meds": [{ "name": "Ibuprofene", "count": 2 }, { "name": "Paracetamolo" }] },
+      { "meds": [{ "name": "Zalexil" }, { "name": "Acido acetilsalicilico" }] }
+    ]
+  },
+  {
+    "name": "factori, simptome, negații și ciclu",
+    "lines": [
+      "2025",
+      "10.05 am dormit puțin, stres, greață și vărsături",
+      "11.05 fără greață, după cafea",
+      "12.05 fără cafea, durere de cap care începe de la ceafă",
+      "13.05 (mâine ciclul) în frunte",
+      "14.05 prima zi de ciclu, puternică",
+      "15.05 sensibilitate la lumină și la zgomot, căldură"
+    ],
+    "count": 6,
+    "expect": [
+      { "triggers": ["Poco sonno", "Stress"], "symptoms": ["Nausea", "Vomito"] },
+      { "symptoms": [], "triggers": ["Caffeina"] },
+      { "triggers": ["Astinenza da caffeina"], "areasHas": ["Nuca"] },
+      { "menses": true, "mensesToday": false, "triggersHas": ["Ciclo mestruale"] },
+      { "menses": true, "mensesToday": true, "intensity": 7 },
+      { "symptoms": ["Sensibilità alla luce", "Sensibilità ai rumori"], "triggers": ["Caldo"] }
+    ]
+  },
+  {
+    "name": "aură, partea durerii și urgență",
+    "lines": [
+      "2025",
+      "20.06 aură vizuală în dreapta, durere în stânga, am luat triptan",
+      "21.06 fără durere dar tulburări vizuale și furnicături în mâna dreaptă, am fost la urgență",
+      "22.06 fără aură, tâmpla dreaptă"
+    ],
+    "count": 3,
+    "expect": [
+      { "side": "sx", "aura": ["Visiva (luci, zig-zag, macchie)"], "type": "con_aura" },
+      { "intensity": 1, "side": "", "aura": ["Visiva (luci, zig-zag, macchie)", "Sensitiva (formicolii)"], "er": true },
+      { "side": "dx", "aura": [], "type": "senza_aura", "areas": ["Tempie"] }
+    ]
+  },
+  {
+    "name": "rânduri rupte, liste și mai multe date pe un rând",
+    "lines": [
+      "2025",
+      "8.03 migrenă puternică care a durat toată ziua",
+      "a trecut singură seara",
+      "",
+      "9.03 ușoară; 10.03 puternică; 11.03 nimic",
+      "evaluare 7 cu ibuprofen",
+      "programare la neurolog pe 15.03 la ora 10",
+      "16.03 control, RMN programat"
+    ],
+    "count": 5,
+    "expect": [
+      { "date": "2025-03-08", "intensity": 7, "approxDur": "12to24" },
+      { "date": "2025-03-09", "intensity": 2 },
+      { "date": "2025-03-10", "intensity": 7 },
+      { "date": "2025-03-11" },
+      { "date": "2025-03-16", "kind": "other" }
+    ]
+  },
+  {
+    "name": "intensitate în cifre și în cuvinte",
+    "lines": [
+      "2025",
+      "1.06 durere 7 din 10",
+      "2.06 un 8 din 10 cu greață",
+      "3.06 intensitate 6",
+      "4.06 durere de 9, insuportabilă",
+      "5.06 durere suportabilă",
+      "6.06 foarte puternică, cea mai rea din viața mea",
+      "7.06 ușoară, apoi s-a agravat și a devenit foarte puternică"
+    ],
+    "count": 7,
+    "expect": [
+      { "intensity": 7 },
+      { "intensity": 8, "symptomsHas": ["Nausea"] },
+      { "intensity": 6 },
+      { "intensity": 9 },
+      { "intensity": 4 },
+      { "intensity": 10 },
+      { "intensity": 8 }
+    ]
+  },
+  {
+    "name": "date imposibile și neordonate",
+    "lines": ["2025", "31.4 puternică", "29.2 ușoară", "30.4 puternică", "2.4 ibuprofen"],
+    "count": 4,
+    "expect": [
+      { "date": null },
+      { "date": null },
+      { "date": "2025-04-30" },
+      { "date": "2025-04-02" }
+    ]
+  },
+  {
+    "name": "doar ciclu, zile fără durere și programări nu sunt crize",
+    "lines": [
+      "2025",
+      "5.05 ciclu",
+      "6.05 începutul ciclului",
+      "7.05 mâine ciclul",
+      "8.05 fără durere",
+      "9.05 totul bine",
+      "10.05 programare la neurolog",
+      "11.05 durere de cap, ciclu"
+    ],
+    "count": 7,
+    "expect": [
+      { "date": "2025-05-05", "kind": "menses", "mensesToday": true },
+      { "date": "2025-05-06", "kind": "menses", "mensesToday": true },
+      { "date": "2025-05-07", "kind": "other", "mensesToday": false },
+      { "date": "2025-05-08", "kind": "free" },
+      { "date": "2025-05-09", "kind": "free" },
+      { "date": "2025-05-10", "kind": "other" },
+      { "date": "2025-05-11", "kind": "attack", "mensesToday": true }
+    ]
+  },
+  {
+    "name": "diacritice cu sedilă (ş, ţ) și poftă de mâncare",
+    "lines": [
+      "Mai 2025",
+      "3 migrenă cu aură, greaţă, ameţeală, sensibilitate la lumină şi la zgomot",
+      "4 durere de cap şi dureri în ceafă după stres",
+      "5 am dormit prost, am sărit peste micul dejun, am băut puţină apă"
+    ],
+    "count": 3,
+    "expect": [
+      { "type": "con_aura", "symptoms": ["Nausea", "Vertigini", "Sensibilità alla luce", "Sensibilità ai rumori"] },
+      { "areasHas": ["Nuca"], "triggersHas": ["Stress"] },
+      { "triggers": ["Poco sonno", "Pasto saltato", "Disidratazione"] }
+    ]
+  }
+]

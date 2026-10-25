@@ -1,0 +1,60 @@
+[
+  {
+    "name": "it: intensificatore + sostantivo, negazioni e scala",
+    "lines": ["2025", "1.3. emicrania molto forte", "2.3. dolore fortissimo alla testa", "3.3. mal di testa forte", "4.3. non troppo forte", "5.3. dolore molto intenso", "6.3. mal di testa lieve"],
+    "count": 6,
+    "expect": [{ "intensity": 8 }, { "intensity": 9 }, { "intensity": 7 }, { "intensity": 4 }, { "intensity": 8 }, { "intensity": 2 }]
+  },
+  {
+    "name": "en: intensifier + noun, negations and scale",
+    "lines": ["2025", "1.3. very strong headache", "2.3. really bad migraine", "3.3. severe pain", "4.3. mild headache", "5.3. not too strong", "6.3. extremely painful headache"],
+    "count": 6,
+    "expect": [{ "intensity": 8 }, { "intensity": 8 }, { "intensity": 7 }, { "intensity": 2 }, { "intensity": 4 }, { "intensity": 9 }]
+  },
+  {
+    "name": "es: intensificador + sustantivo, negaciones y escala",
+    "lines": ["2025", "1.3. dolor de cabeza muy fuerte", "2.3. migraña muy intensa", "3.3. dolor fuerte", "4.3. dolor leve", "5.3. no muy fuerte", "6.3. dolor insoportable"],
+    "count": 6,
+    "expect": [{ "intensity": 8 }, { "intensity": 8 }, { "intensity": 7 }, { "intensity": 2 }, { "intensity": 4 }, { "intensity": 9 }]
+  },
+  {
+    "name": "fr: intensificateur + nom, negations et echelle",
+    "lines": ["2025", "1.3. mal de tête très fort", "2.3. migraine très forte", "3.3. douleur forte", "4.3. douleur légère", "5.3. pas très fort", "6.3. douleur insupportable"],
+    "count": 6,
+    "expect": [{ "intensity": 8 }, { "intensity": 8 }, { "intensity": 7 }, { "intensity": 2 }, { "intensity": 4 }, { "intensity": 9 }]
+  },
+  {
+    "name": "de: Verstärker + Substantiv, Verneinungen und Skala",
+    "lines": ["2025", "1.3. sehr starke Kopfschmerzen", "2.3. sehr starke Migräne", "3.3. starke Schmerzen", "4.3. leichte Kopfschmerzen", "5.3. nicht so stark", "6.3. unerträgliche Schmerzen"],
+    "count": 6,
+    "expect": [{ "intensity": 8 }, { "intensity": 8 }, { "intensity": 7 }, { "intensity": 2 }, { "intensity": 4 }, { "intensity": 9 }]
+  },
+  {
+    "name": "pt: intensificador + substantivo, negacoes e escala",
+    "lines": ["2025", "1.3. dor de cabeça muito forte", "2.3. enxaqueca muito intensa", "3.3. dor forte", "4.3. dor leve", "5.3. não muito forte", "6.3. dor insuportável"],
+    "count": 6,
+    "expect": [{ "intensity": 8 }, { "intensity": 8 }, { "intensity": 7 }, { "intensity": 2 }, { "intensity": 4 }, { "intensity": 9 }]
+  },
+  {
+    "name": "ro: intensificator + substantiv, negatii si scala",
+    "lines": ["2025", "1.3. durere de cap foarte puternică", "2.3. migrenă foarte intensă", "3.3. durere puternică", "4.3. durere ușoară", "5.3. nu foarte puternică", "6.3. durere insuportabilă"],
+    "count": 6,
+    "expect": [{ "intensity": 8 }, { "intensity": 8 }, { "intensity": 7 }, { "intensity": 2 }, { "intensity": 4 }, { "intensity": 9 }]
+  },
+  {
+    "name": "nl: versterker + zelfstandig naamwoord, ontkenningen en schaal",
+    "lines": ["2025", "1.3. zeer sterke hoofdpijn", "2.3. heel erge migraine", "3.3. hevige pijn", "4.3. lichte hoofdpijn", "5.3. niet zo sterk", "6.3. ondraaglijke pijn"],
+    "count": 6,
+    "expect": [{ "intensity": 8 }, { "intensity": 8 }, { "intensity": 7 }, { "intensity": 2 }, { "intensity": 4 }, { "intensity": 9 }]
+  },
+  {
+    "name": "nota in piu' lingue mescolate (le liste si sommano) e abbreviazioni",
+    "lines": ["2025", "10.3. very strong headache, Ibuprofen 400, nausea", "11.3. dolor muy fuerte, náuseas, nach dem Kaffee", "12.3. migraine très forte, Triptan genommen"],
+    "count": 3,
+    "expect": [
+      { "intensity": 8, "meds": [{ "name": "Ibuprofene", "dose": "400 mg" }], "symptomsHas": ["Nausea"] },
+      { "intensity": 8, "symptomsHas": ["Nausea"], "triggersHas": ["Caffeina"] },
+      { "intensity": 8, "meds": [{ "name": "Triptano" }] }
+    ]
+  }
+]
