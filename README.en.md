@@ -150,6 +150,6 @@ PDF.js by Mozilla · weather by [Open-Meteo](https://open-meteo.com/) · icons a
 <div align="center">
 <br>
 
-Made with 💜 for Erika &nbsp;·&nbsp; [@DaValz](https://github.com/DaValz)
+Made with 💜 for Erika. &nbsp;·&nbsp; [@DaValz](https://github.com/DaValz)
 
 </div>
