@@ -82,7 +82,7 @@ Italiano, English, Español, Français, Deutsch, Português (Brasil), Română, 
 
 ## 📲 Installare su iPhone
 
-1. Apri **<https://davalz.github.io/app_emicrania/>** con **Safari**.
+1. Apri **<https://davalz.github.io/MigraineTracker-App/>** con **Safari**.
 2. Tocca **Condividi** (il quadrato con la freccia) › **Aggiungi alla schermata Home**.
 3. Apri il diario **sempre dall'icona**: da quel momento funziona a schermo intero e anche senza connessione.
 
@@ -97,54 +97,6 @@ Funziona anche su Android e sul computer, con qualsiasi browser recente.
 - Se cancelli l'icona o i dati di Safari i dati si perdono: l'app ricorda di fare un **backup** (*Impostazioni › Dati e backup*) da salvare in File o iCloud Drive.
 
 > ⚠️ **Non è un dispositivo medico.** Registra e riassume ciò che inserisci, ma non fa diagnosi e non sostituisce il parere del medico.
-
-## 🚀 Pubblicare e aggiornare su GitHub
-
-<details>
-<summary><b>Prima pubblicazione (GitHub Pages)</b></summary>
-
-**Con GitHub Desktop (consigliato: nessun limite sul numero di file)**
-1. Decomprimi lo zip in una cartella, ad esempio `Documenti\app_emicrania`.
-2. In GitHub Desktop: *File › Add local repository…* e scegli quella cartella; quando dice che non è un repository, tocca **create a repository** › *Create repository*.
-3. **Publish repository**: togli la spunta da *Keep this code private* (con il piano gratuito GitHub Pages funziona solo con i repository pubblici; nell'app non ci sono dati personali) e conferma.
-4. Su github.com apri il repository › **Settings › Pages › Build and deployment**: *Deploy from a branch*, branch `main`, cartella `/ (root)` › *Save*.
-5. Dopo uno o due minuti l'app è su `https://<utente>.github.io/<repository>/`.
-
-**Dal browser (senza installare nulla)**
-Crea un repository **pubblico**, poi **Add file › Upload files** e trascina **il contenuto** della cartella (non la cartella stessa). GitHub accetta al massimo 100 file per volta e l'app ne ha poco meno (circa 95): di solito basta un solo caricamento; se la pagina segnala troppi file, carica in due riprese (prima i file nella radice e `js`, poi `css`, `icons`, `vendor`, `docs`, `tests`, `tools`). Infine il punto 4 qui sopra.
-
-</details>
-
-<details>
-<summary><b>Aggiornare l'app senza ricreare il repository</b></summary>
-
-Il repository non va mai eliminato né ricreato: basta **sostituire i file** con quelli della nuova versione. GitHub conserva la cronologia e vede solo ciò che è cambiato. Tre modi, dal più semplice.
-
-**1 · GitHub Desktop (consigliato)**
-1. Decomprimi lo zip della nuova versione.
-2. Copia **tutto il contenuto** nella cartella del repository (quella collegata a GitHub Desktop) e scegli *Sostituisci i file nella destinazione*.
-3. GitHub Desktop mostra solo i file cambiati: scrivi un titolo (es. «Versione 2.2») › **Commit to main** › **Push origin**.
-
-Per eliminare anche i file che nella nuova versione non esistono più, svuota prima la cartella del repository (tranne la cartella nascosta `.git`) e poi copia la nuova versione.
-
-**2 · Da PowerShell** (con Git installato)
-```powershell
-cd C:\percorso\del\repository
-# copia qui il contenuto della nuova versione, poi:
-git add -A
-git commit -m "Versione 2.2"
-git push
-```
-Per rimuovere anche i file che nella nuova versione non esistono più, svuota prima la cartella (tranne `.git`) e poi copia la nuova versione.
-
-**3 · Dal browser**
-*Add file › Upload files*, trascina il contenuto della nuova versione e conferma: i file con lo stesso nome vengono sostituiti. I file eliminati vanno tolti a mano (⋯ › Delete file).
-
-**Dopo il caricamento** GitHub Pages ripubblica da solo in 1–2 minuti. Sull'iPhone, aprendo l'app compare «È disponibile una nuova versione dell’app.»: tocca **Aggiorna** (o chiudi e riapri l'app). I dati non si toccano.
-
-> `sw.js` è il file che avvisa i telefoni dell'aggiornamento: è già aggiornato in ogni versione consegnata. Se modifichi tu i file a mano, rigenerarlo con `python tools/build_sw.py` prima di pubblicare.
-
-> ⚠️ **Cambiare indirizzo = nuova app.** I dati sono legati all'indirizzo da cui l'app è stata installata. Se pubblichi su un altro account o con un altro nome di repository (quindi un indirizzo diverso), l'icona già sul telefono non si aggiorna: prima fai un **backup completo** (*Impostazioni › Dati e backup*), poi installa l'app dal nuovo indirizzo e **ripristina il backup**.
 
 </details>
 
@@ -198,6 +150,6 @@ PDF.js di Mozilla · meteo di [Open-Meteo](https://open-meteo.com/) · icone e i
 <div align="center">
 <br>
 
-Fatto con 💜 per lei &nbsp;·&nbsp; [@DaValz](https://github.com/DaValz)
+Fatto con 💜 per Erika. &nbsp;·&nbsp; [@DaValz](https://github.com/DaValz)
 
 </div>
