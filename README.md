@@ -26,7 +26,7 @@ Per ricordare ogni attacco, capire cosa funziona e raccontarlo al medico con i d
 
 La mia ragazza soffre di emicrania da quando era piccola.
 
-Chi ci convive lo sa: non è «solo mal di testa». Gli attacchi arrivano quando vogliono e, il giorno della visita, bisogna rispondere a domande che sembrano semplici — *quante volte? quanto forte? quanto è durato? cosa hai preso? ha funzionato?* — a memoria, a distanza di mesi. Il neurologo ha bisogno di numeri; dopo anni di dolore, la memoria di solito conserva solo la fatica.
+Chi ci convive lo sa: non è «solo mal di testa». Gli attacchi arrivano quando vogliono e, il giorno della visita, bisogna rispondere a domande che sembrano semplici, *quante volte? quanto forte? quanto è durato? cosa hai preso? ha funzionato?*, a memoria, a distanza di mesi. Il neurologo ha bisogno di numeri; dopo anni di dolore, la memoria di solito conserva solo la fatica.
 
 E poi c'è tutto il resto della storia: le terapie provate e quelle interrotte, gli esami, i referti, le lettere di dimissione sparsi tra cartelle, e-mail e foto nel rullino.
 
