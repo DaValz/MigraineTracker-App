@@ -9,7 +9,7 @@ Per ricordare ogni attacco, capire cosa funziona e raccontarlo al medico con i d
 
 <br>
 
-[![Apri l'app](https://img.shields.io/badge/%E2%96%B6%20Apri%20l'app-5B5BD6?style=for-the-badge)](https://davalz.github.io/app_emicrania/)
+[![Apri l'app](https://img.shields.io/badge/%E2%96%B6%20Apri%20l'app-5B5BD6?style=for-the-badge)]([https://davalz.github.io/app_emicrania/](https://davalz.github.io/MigraineTracker-App/))
 
 ![iPhone](https://img.shields.io/badge/iPhone-installabile%20dalla%20Home-1D1D1F?style=flat-square&logo=apple&logoColor=white)
 ![Offline](https://img.shields.io/badge/funziona-senza%20connessione-2EA043?style=flat-square)
