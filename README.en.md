@@ -9,7 +9,7 @@ Remember every attack, understand what works, and tell your doctor the whole sto
 
 <br>
 
-[![Open the app](https://img.shields.io/badge/%E2%96%B6%20Open%20the%20app-5B5BD6?style=for-the-badge)](https://davalz.github.io/app_emicrania/)
+[![Open the app](https://img.shields.io/badge/%E2%96%B6%20Open%20the%20app-5B5BD6?style=for-the-badge)](https://davalz.github.io/MigraineTracker-App/)
 
 ![iPhone](https://img.shields.io/badge/iPhone-add%20to%20Home%20Screen-1D1D1F?style=flat-square&logo=apple&logoColor=white)
 ![Offline](https://img.shields.io/badge/works-offline-2EA043?style=flat-square)
@@ -26,7 +26,7 @@ Remember every attack, understand what works, and tell your doctor the whole sto
 
 My girlfriend has had migraines since she was a child.
 
-Anyone who lives with them knows it is not "just a headache". Attacks come when they want to, and on the day of the appointment you have to answer questions that sound simple — *how many times? how bad? how long did it last? what did you take? did it work?* — from memory, months later. The neurologist needs numbers; after years of pain, memory tends to keep only the exhaustion.
+Anyone who lives with them knows it is not "just a headache". Attacks come when they want to, and on the day of the appointment you have to answer questions that sound simple, *how many times? how bad? how long did it last? what did you take? did it work?*, from memory, months later. The neurologist needs numbers; after years of pain, memory tends to keep only the exhaustion.
 
 And then there is the rest of the story: the treatments tried and abandoned, the tests, the reports, the discharge letters scattered across folders, e-mails and photos in the camera roll.
 
@@ -82,7 +82,7 @@ Italiano, English, Español, Français, Deutsch, Português (Brasil), Română, 
 
 ## 📲 Install on iPhone
 
-1. Open **<https://davalz.github.io/app_emicrania/>** in **Safari**.
+1. Open **<https://davalz.github.io/MigraineTracker-App/>** in **Safari**.
 2. Tap **Share** (the square with the arrow) › **Add to Home Screen**.
 3. Always open the diary **from the icon**: from then on it runs full screen, even without a connection.
 
@@ -97,54 +97,6 @@ It also works on Android and on a computer, in any recent browser.
 - If you delete the icon or Safari's data, the data is lost: the app reminds you to make a **backup** (*Settings › Data and backup*) and save it in Files or iCloud Drive.
 
 > ⚠️ **This is not a medical device.** It records and summarises what you enter, but it does not diagnose and does not replace your doctor's advice.
-
-## 🚀 Publish and update on GitHub
-
-<details>
-<summary><b>First publication (GitHub Pages)</b></summary>
-
-**With GitHub Desktop (recommended: no limit on the number of files)**
-1. Unzip into a folder, for example `Documents\app_emicrania`.
-2. In GitHub Desktop: *File › Add local repository…* and pick that folder; when it says it is not a repository, click **create a repository** › *Create repository*.
-3. **Publish repository**: untick *Keep this code private* (with the free plan GitHub Pages only works with public repositories; there is no personal data in the app) and confirm.
-4. On github.com open the repository › **Settings › Pages › Build and deployment**: *Deploy from a branch*, branch `main`, folder `/ (root)` › *Save*.
-5. After a minute or two the app is live at `https://<user>.github.io/<repository>/`.
-
-**From the browser (nothing to install)**
-Create a **public** repository, then **Add file › Upload files** and drag **the contents** of the folder (not the folder itself). GitHub accepts at most 100 files at a time and the app has just under that (about 95): one upload is usually enough; if the page complains about too many files, upload in two batches (first the files in the root and `js`, then `css`, `icons`, `vendor`, `docs`, `tests`, `tools`). Then step 4 above.
-
-</details>
-
-<details>
-<summary><b>Update the app without recreating the repository</b></summary>
-
-Never delete or recreate the repository: just **replace the files** with those of the new version. GitHub keeps the history and sees only what changed. Three ways, from the easiest.
-
-**1 · GitHub Desktop (recommended)**
-1. Unzip the new version.
-2. Copy **everything** into the repository folder (the one linked to GitHub Desktop) and choose *Replace the files in the destination*.
-3. GitHub Desktop lists only the changed files: write a title (e.g. "Version 2.2") › **Commit to main** › **Push origin**.
-
-To also delete files that no longer exist in the new version, empty the repository folder first (except the hidden `.git` folder) and then copy the new version.
-
-**2 · From PowerShell** (with Git installed)
-```powershell
-cd C:\path\to\repository
-# copy the contents of the new version here, then:
-git add -A
-git commit -m "Version 2.2"
-git push
-```
-To also remove files that no longer exist in the new version, empty the folder first (except `.git`) and then copy the new version.
-
-**3 · From the browser**
-*Add file › Upload files*, drag the contents of the new version and confirm: files with the same name are replaced. Deleted files must be removed by hand (⋯ › Delete file).
-
-**After uploading**, GitHub Pages republishes by itself in 1–2 minutes. On the iPhone, opening the app shows "A new version of the app is available.": tap **Update** (or close and reopen the app). Your data is not touched.
-
-> `sw.js` is the file that tells phones about an update: it is already refreshed in every delivered version. If you edit files by hand, regenerate it with `python tools/build_sw.py` before publishing.
-
-> ⚠️ **A new address is a new app.** Data is tied to the address the app was installed from. If you publish under another account or repository name (so a different address), the icon already on the phone does not update: first make a **full backup** (*Settings › Data and backup*), then install the app from the new address and **restore the backup**.
 
 </details>
 
@@ -198,6 +150,6 @@ PDF.js by Mozilla · weather by [Open-Meteo](https://open-meteo.com/) · icons a
 <div align="center">
 <br>
 
-Made with 💜 for her &nbsp;·&nbsp; [@DaValz](https://github.com/DaValz)
+Made with 💜 for Erika &nbsp;·&nbsp; [@DaValz](https://github.com/DaValz)
 
 </div>
