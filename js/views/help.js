@@ -46,6 +46,7 @@ export function openHelp() {
           t('Per un attacco passato di cui non ricordi l’ora, attiva «Non ricordo l’orario»: basta il giorno e, se la ricordi, una durata indicativa.'),
           t('Nei giorni senza mal di testa tocca «Nessuna emicrania oggi»: rende le statistiche più precise.'),
           t('Nel Diario tocca un giorno per vedere o modificare quello che hai registrato.'),
+          t('Nel Diario scegli «Mesi» per vedere 6 o 12 mesi affiancati: i giorni con emicrania si riconoscono a colpo d’occhio. Tocca il nome di un mese per aprirlo.'),
           t('«Dettagli della giornata» raccoglie sonno, stress, caffè, acqua: servono per scoprire i tuoi fattori scatenanti.'),
           t('Le impostazioni, il backup e questa guida si aprono dal pulsante tondo in alto a destra.'),
         ),
