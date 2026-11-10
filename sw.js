@@ -1,6 +1,6 @@
 /* Service worker del Diario Emicrania: rende l'app disponibile offline. */
 /* BEGIN GENERATED (tools/build_sw.py) */
-const VERSION = '4aa1936e6c';
+const VERSION = 'a484290a56';
 const ASSETS = [
   './',
   'index.html',
