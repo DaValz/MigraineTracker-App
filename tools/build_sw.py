@@ -2,9 +2,14 @@
 
 Va eseguito ogni volta che cambia un file dell'app, prima della pubblicazione:
     python tools/build_sw.py
+La versione dipende dal contenuto dei file. Se una pubblicazione e' andata storta (es. file caricati nella cartella sbagliata)
+i telefoni possono aver gia' messo in cache i file vecchi con la versione nuova: per costringerli a riscaricare tutto
+    python tools/build_sw.py --forza
 """
 import hashlib
 import re
+import sys
+import time
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -35,6 +40,8 @@ def main():
         urls.append(rel)
         digest.update(rel.encode())
         digest.update(f.read_bytes())
+    if "--forza" in sys.argv[1:]:
+        digest.update(str(time.time_ns()).encode())
     version = digest.hexdigest()[:10]
     sw = ROOT / "sw.js"
     text = sw.read_text(encoding="utf-8")

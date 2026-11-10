@@ -1400,6 +1400,52 @@ def s32_import_notes_in_other_languages(pw):
     return ctx
 
 
+@scenario
+def s33_calendar_months_side_by_side(pw):
+    ctx = Ctx(pw, seed=make_db(days=400, seed=4))
+    p = ctx.page
+    tab(p, "Diario")
+    p.locator(".seg-btn", has_text=re.compile(r"^Mesi$")).click()
+    expect(p.locator(".mm")).to_have_count(6)
+    expect(p.locator(".mm.current")).to_have_count(1)
+    assert p.locator(".mm").last.evaluate("(el) => el.classList.contains('current')")
+    # Su iPhone stanno 2 mesi per riga e nulla esce dallo schermo.
+    boxes = [p.locator(".mm").nth(i).bounding_box() for i in range(2)]
+    assert abs(boxes[0]["y"] - boxes[1]["y"]) < 1 and boxes[1]["x"] > boxes[0]["x"], boxes
+    assert p.evaluate("() => [...document.querySelectorAll('.view')].every((v) => v.scrollWidth <= v.clientWidth)")
+    counts = sum(int(c) for c in p.locator(".mm-count").all_inner_texts())
+    total = int(p.locator(".mm-sum .stat-value").first.inner_text())
+    assert counts == total and counts == p.locator(".mm-cell.s-migraine").count(), (counts, total)
+    assert total > 0
+    head = p.locator(".mm-head").first
+    assert re.search(r"\d+ giorn[oi] con emicrania, apri il mese$", head.get_attribute("aria-label")), head.get_attribute("aria-label")
+    p.locator(".seg-btn", has_text="12 mesi").click()
+    expect(p.locator(".mm")).to_have_count(12)
+    title0 = p.locator(".mm-range").inner_text()
+    p.get_by_role("button", name="Periodo precedente").click()
+    expect(p.locator(".mm.current")).to_have_count(0)
+    assert p.locator(".mm-range").inner_text() != title0
+    p.locator(".mm-range").click()
+    expect(p.locator(".mm-range")).to_have_text(title0)
+    p.locator(".mm-cell.s-migraine").first.click()
+    expect(p.locator(".sheet-title")).to_be_visible()
+    p.locator(".sheet-wrap").get_by_role("button", name="Chiudi").first.click()
+    p.wait_for_selector(".sheet-wrap", state="detached")
+    p.screenshot(path=str(OUT / f"{engine}-diario-mesi.png"))
+    # La scelta resta anche riaprendo l'app.
+    p.reload()
+    p.wait_for_selector(".tabbar")
+    tab(p, "Diario")
+    expect(p.locator(".mm")).to_have_count(12)
+    name = p.locator(".mm-head").nth(3).get_attribute("aria-label").split(":")[0]
+    p.locator(".mm-head").nth(3).click()
+    expect(p.locator(".cal-grid")).to_be_visible()
+    expect(p.locator(".cal-head .cal-title")).to_have_text(name)
+    expect(p.locator(".seg-btn.on").first).to_have_text("Mese")
+    ensure_clean(ctx, "months side by side")
+    return ctx
+
+
 with sync_playwright() as pw:
     for name, fn in list(globals().items()):
         if name.startswith("s") and name[1:3].isdigit() and callable(fn):
